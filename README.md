@@ -13,7 +13,7 @@ Funcionalidades secundárias do projeto:
 1. Gerenciar conta de usuário
 2. Consultar extrato bancário
 3. Realizar empréstimo (inclui parcelamento e juros)
-4. Consulta de cotação de moedas estrangeiras (abre um link externo)
+4. Sistema de lotérica virtual com jogos simulados
 
 Esse projeto será feito com React Native (incluindo HTML, CSS e JavaScript) para criar uma aplicação mobile funcional
 
