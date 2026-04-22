@@ -3,63 +3,45 @@ import { View, Image, Text, TextInput, StyleSheet, Alert, ScrollView } from 'rea
 import { useRouter } from 'expo-router';
 import { StdButton } from '@/components/StdButton';
 import { Cores } from '../src/styles/global';
+import { AppBar } from '@/components/AppBar';
 
-export default function SignInForm() {
+export default function Transfer1() {
   const router = useRouter();
   const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [telefone, setTelefone] = useState('');
   const [senha, setSenha] = useState('');
   const [senhaConfirmar, setSenhaConfirmar] = useState('');
 
-  const gotoLogin = () => {
-    Alert.alert("Cadastro feito com sucesso!")
-    router.replace('/'); 
+  const gotoTransfer2 = () => {
+    router.replace('/transfer2'); 
   };
-  const gotoLoginFailed = () => {
-    Alert.alert("Cadastro cancelado.")
-    router.replace('/'); 
+  const TransferFailed = () => {
+    Alert.alert("Transferência cancelada.")
+    router.replace('/menu'); 
   };
 
   return (
     <View style={styles.container}>
-    
+        <AppBar title="Fazer Transferência"/>
         <ScrollView 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         >
-            <Image 
-                source={require('../assets/images/logo.png')} 
-                style={styles.logo} 
-            />
+            
             <View style={styles.form}>
-                <Text style={styles.header}> Insira seus dados</Text>
-                <Text style={styles.text}>Seu usuário:</Text>
+                <Text style={styles.header}>Para quem fazer uma transferência, Username?</Text>
+                <Text style={styles.text}>Usuário, email ou telefone do recebedor:</Text>
                 <TextInput 
                 style={styles.input}
                 value={username}
                 onChangeText={setUsername}
                 />
-                <Text style={styles.text}>Seu email:</Text>
+                <Text style={styles.text}>Valor a ser transferido:</Text>
                 <TextInput 
                 style={styles.input}
-                value={email}
-                onChangeText={setEmail}
-                />
-                <Text style={styles.text}>Seu telefone:</Text>
-                <TextInput 
-                style={styles.input}
-                value={telefone}
-                onChangeText={setTelefone}
-                />
-                <Text style={styles.text}>Sua senha:</Text>
-                <TextInput 
-                style={styles.input}
-                secureTextEntry={true}
                 value={senha}
                 onChangeText={setSenha}
                 />
-                <Text style={styles.text}>Confirme sua senha:</Text>
+                <Text style={styles.text}>Seu senha de transação:</Text>
                 <TextInput 
                 style={styles.input}
                 secureTextEntry={true}
@@ -67,9 +49,9 @@ export default function SignInForm() {
                 onChangeText={setSenhaConfirmar}
                 />
 
-                <StdButton title="Cadastrar" onPress={gotoLogin}/>
+                <StdButton title="Continuar Transferência" onPress={gotoTransfer2}/>
                 <StdButton title="Cancelar" 
-                    onPress={gotoLoginFailed} 
+                    onPress={TransferFailed} 
                     backgroundColor={Cores.branco}
                     textColor={Cores.azulEscuro}
                 />
@@ -84,8 +66,7 @@ const styles = StyleSheet.create({
     flex: 1, 
     width: "100%",
     flexDirection: "column",
-    backgroundColor: Cores.azulClaro,
-    padding: 20,
+    backgroundColor: Cores.azulFundo,
   },
   scrollContent: {
     paddingBottom: 40,
@@ -98,7 +79,7 @@ const styles = StyleSheet.create({
     padding: 24,
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
-    width: '100%',
+    width: '80%',
   },
   header:{
     fontFamily: "sans-serif",

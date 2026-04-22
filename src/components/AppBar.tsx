@@ -22,7 +22,7 @@ export function AppBar({ title }: AppBarProps) {
         <Text style={styles.titulo}>{title}</Text>
 
         <TouchableOpacity 
-          onPress={() => router.push('/gerenciar-conta')}
+          onPress={() => router.push('/app/gerenciarConta1')}
           style={styles.botaoConta}
         >
           <Image 

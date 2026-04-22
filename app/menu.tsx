@@ -6,13 +6,13 @@ import { FloatingOptions } from '@/components/FloatingOptions';
 import { Cores } from '../src/styles/global';
 import { AppBar } from '@/components/AppBar';
 
-export default function LoginForm() {
+export default function Menu() {
   const router = useRouter();
   const [username, setUsername] = useState('');
   const [senha, setSenha] = useState('');
 
   const gotoTransf = () => {
-    router.push('/transf1'); 
+    router.push('/transfer1'); 
   };
 
   const gotoCadastro = () => {

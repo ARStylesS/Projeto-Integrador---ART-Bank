@@ -4,7 +4,7 @@ import { StyleSheet } from 'react-native';
 export const Cores = {
     azulEscuro: '#2920AA',
     azulClaro: '#2864E5',
-    azulFundo: '#D3E1FF',
+    azulFundo: '#b3c5f0',
 
     rosa: '#FF1083',
     rosaFundo: '#FFD5DB',
