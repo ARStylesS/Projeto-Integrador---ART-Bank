@@ -23,6 +23,14 @@ Funcionalidades secundárias do projeto:
 
 Esse projeto será feito com React Native (incluindo HTML, CSS e JavaScript) para criar uma aplicação mobile funcional
 
+Depois de clonar o repositório, insira not terminal:
+> npm install
+> npx expo install expo-constants
+> npx expo install expo-splash-screen
+> npx expo start
+
+O último deve ser inserido toda vez para iniciar o servidor da aplicação.
+
 Dashboard do Projeto feito no Figma:
 https://www.figma.com/design/wI1IrLNZYZpZm3jlP7f3vE/ARBank---Transfer%C3%AAncias-Banc%C3%A1rias?node-id=0-1&t=fydsYEml5I9WPz6t-1
 

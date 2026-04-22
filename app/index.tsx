@@ -1,35 +1,47 @@
 import React, { useState } from 'react';
-import { View, Image, TextInput, Button, StyleSheet, Alert } from 'react-native';
+import { View, Image, Text, TextInput, StyleSheet, Alert } from 'react-native';
+import { useRouter } from 'expo-router';
+import { StdButton } from '@/components/StdButton';
+import { Cores } from '../src/styles/global';
 
 export default function LoginForm() {
-  const [email, setEmail] = useState('');
+  const router = useRouter();
+  const [username, setUsername] = useState('');
   const [senha, setSenha] = useState('');
 
-  const handleSubmit = () => {
-    Alert.alert("Login feito com sucesso", `Bem-vindo, seuNome`);
+  const gotoMenu = () => {
+    Alert.alert("Login feito com sucesso!")
+    router.push('/menu'); 
+  };
+
+  const gotoCadastro = () => {
+    router.push('/cadastro'); 
   };
 
   return (
     <View style={styles.container}>
       <Image 
-          source={require('../assets/images/logo.png')} 
-          style={styles.logo} 
-        />
+        source={require('../assets/images/logo.png')} 
+        style={styles.logo} 
+      />
       <View style={styles.form}>
+        <Text style={styles.header}> Olá!</Text>
+        <Text style={styles.text}>   Insira seu usuário e senha!</Text>
         <TextInput 
           style={styles.input}
-          placeholder="Digite seu e-mail"
-          value={email}
-          onChangeText={setEmail}
+          placeholder="Seu nome de usuario aqui"
+          value={username}
+          onChangeText={setUsername}
         />
         <TextInput 
           style={styles.input}
-          placeholder="Digite sua senha"
+          placeholder="Sua senha aqui"
           secureTextEntry={true}
           value={senha}
           onChangeText={setSenha}
         />
-        <Button title="Entrar" onPress={handleSubmit}/>
+        <StdButton title="Entrar" onPress={gotoMenu}/>
+        <StdButton title="Cadastrar nova conta" onPress={gotoCadastro} backgroundColor={Cores.verde}/>
       </View>
     </View>
   );
@@ -39,14 +51,26 @@ const styles = StyleSheet.create({
   container: { 
     flex: 1, 
     flexDirection: "column",
-    justifyContent: "center", 
     alignItems: "center",
-    backgroundColor: "#6599E5",
+    backgroundColor: Cores.azulClaro,
   },
   form: { 
     width: "70%",
     padding: 24,
-    backgroundColor: "#FFFFFF"
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+  },
+  header:{
+    fontFamily: "sans-serif",
+    fontWeight: 'bold',
+    fontSize: 32,
+    marginBottom: 8,
+  },
+  text: {
+    fontFamily: "sans-serif",
+    fontWeight: 'bold',
+    fontSize: 16,
+    marginBottom: 32,
   },
   input: { 
     width: "100%",
@@ -58,6 +82,7 @@ const styles = StyleSheet.create({
   logo: {
     width: 200,
     height: 200,
-    marginBottom: 64,
-  }
+    marginBottom: 40,
+    marginTop: 80,
+  },
 });
