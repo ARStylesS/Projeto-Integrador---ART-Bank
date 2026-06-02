@@ -25,7 +25,7 @@ export default function LoginForm() {
         style={styles.logo} 
       />
       <View style={styles.form}>
-        <Text style={styles.header}> Olá!</Text>
+        <Text style={styles.header}> Olá! </Text>
         <Text style={styles.text}>   Insira seu usuário e senha!</Text>
         <TextInput 
           style={styles.input}
