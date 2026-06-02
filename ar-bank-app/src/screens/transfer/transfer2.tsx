@@ -2,41 +2,43 @@ import React, { useState } from 'react';
 import { View, Image, Text, TextInput, StyleSheet, Alert, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StdButton } from '@/components/StdButton';
-import { Cores } from '../src/styles/global';
-import { FloatingOptions } from '@/components/FloatingOptions';
+import { Cores } from '../../styles/global';
+import { AppBar } from '@/components/AppBar';
 
-export default function SignInForm() {
+export default function Transfer2() {
   const router = useRouter();
-  const gotoConta2 = () => {
-    router.replace('/conta2'); 
+
+  const gotoTransfer3 = () => {
+    router.replace('/transfer3'); 
   };
-  
+  const correctTransfer = () => {
+    router.replace('/transfer1'); 
+  };
 
   return (
     <View style={styles.container}>
-    
+        <AppBar title="Fazer Transferência"/>
         <ScrollView 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         >
+            
             <View style={styles.form}>
                 <Text style={styles.header}>Confirme as informações</Text>
-                    <Text style={styles.text}>Usuário:</Text>
-                    <Text style={styles.info}>Username</Text>
+                <Text style={styles.text}>Usuário, email ou telefone do recebedor:</Text>
+                <Text style={styles.info}>Uma chave qualquer</Text>
 
-                    <Text style={styles.text}>Email:</Text>
-                    <Text style={styles.info}>email@exemplo.net</Text>
-            
-                    <Text style={styles.text}>Telefone:</Text>
-                    <Text style={styles.info}>telefone</Text>
-            
-                    <StdButton title="Alterar Dados" onPress={gotoConta2}/>
-                    
-                    
+                <Text style={styles.text}>Valor a ser transferido:</Text>
+                <Text style={styles.info}>R$ 200</Text>
+
+                <StdButton title="Confirmar Transferência" onPress={gotoTransfer3}/>
+                <StdButton title="Corrigir Informações" 
+                    onPress={correctTransfer} 
+                    backgroundColor={Cores.branco}
+                    textColor={Cores.azulEscuro}
+                />
             </View>
-
         </ScrollView>
-        <FloatingOptions/>
     </View>
   );
 }
@@ -46,8 +48,7 @@ const styles = StyleSheet.create({
     flex: 1, 
     width: "100%",
     flexDirection: "column",
-    backgroundColor: Cores.azulClaro,
-    padding: 20,
+    backgroundColor: Cores.azulFundo,
   },
   scrollContent: {
     paddingBottom: 40,
@@ -60,7 +61,7 @@ const styles = StyleSheet.create({
     padding: 24,
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
-    width: '100%',
+    width: '80%',
   },
   header:{
     fontFamily: "sans-serif",
@@ -74,10 +75,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 4,
   },
-  info: { 
+  info:{
     fontFamily: "sans-serif",
     fontWeight: 'bold',
     fontSize: 24,
     marginBottom: 24,
+  },
+  logo: {
+    width: 100,
+    height: 100,
+    marginBottom: 40,
+    marginTop: 20,
   },
 });

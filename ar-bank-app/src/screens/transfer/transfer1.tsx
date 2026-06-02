@@ -2,17 +2,21 @@ import React, { useState } from 'react';
 import { View, Image, Text, TextInput, StyleSheet, Alert, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StdButton } from '@/components/StdButton';
-import { Cores } from '../src/styles/global';
+import { Cores } from '../../styles/global';
 import { AppBar } from '@/components/AppBar';
 
-export default function Transfer2() {
+export default function Transfer1() {
   const router = useRouter();
+  const [username, setUsername] = useState('');
+  const [senha, setSenha] = useState('');
+  const [senhaConfirmar, setSenhaConfirmar] = useState('');
 
-  const gotoTransfer3 = () => {
-    router.replace('/transfer3'); 
+  const gotoTransfer2 = () => {
+    router.replace('/transfer2'); 
   };
-  const correctTransfer = () => {
-    router.replace('/transfer1'); 
+  const TransferFailed = () => {
+    Alert.alert("Transferência cancelada.")
+    router.replace('/menu'); 
   };
 
   return (
@@ -24,16 +28,30 @@ export default function Transfer2() {
         >
             
             <View style={styles.form}>
-                <Text style={styles.header}>Confirme as informações</Text>
+                <Text style={styles.header}>Para quem fazer uma transferência, Username?</Text>
                 <Text style={styles.text}>Usuário, email ou telefone do recebedor:</Text>
-                <Text style={styles.info}>Uma chave qualquer</Text>
-
+                <TextInput 
+                style={styles.input}
+                value={username}
+                onChangeText={setUsername}
+                />
                 <Text style={styles.text}>Valor a ser transferido:</Text>
-                <Text style={styles.info}>R$ 200</Text>
+                <TextInput 
+                style={styles.input}
+                value={senha}
+                onChangeText={setSenha}
+                />
+                <Text style={styles.text}>Seu senha de transação:</Text>
+                <TextInput 
+                style={styles.input}
+                secureTextEntry={true}
+                value={senhaConfirmar}
+                onChangeText={setSenhaConfirmar}
+                />
 
-                <StdButton title="Confirmar Transferência" onPress={gotoTransfer3}/>
-                <StdButton title="Corrigir Informações" 
-                    onPress={correctTransfer} 
+                <StdButton title="Continuar Transferência" onPress={gotoTransfer2}/>
+                <StdButton title="Cancelar" 
+                    onPress={TransferFailed} 
                     backgroundColor={Cores.branco}
                     textColor={Cores.azulEscuro}
                 />
@@ -75,11 +93,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 4,
   },
-  info:{
-    fontFamily: "sans-serif",
-    fontWeight: 'bold',
-    fontSize: 24,
-    marginBottom: 24,
+  input: { 
+    width: "100%",
+    borderBottomWidth: 1, 
+    marginBottom: 32, 
+    padding: 8, 
+    alignItems: "center"
   },
   logo: {
     width: 100,

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Image, Text, TextInput, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StdButton } from '@/components/StdButton';
-import { Cores } from '../src/styles/global';
+import { Cores } from '../styles/global';
 
 export default function LoginForm() {
   const router = useRouter();
@@ -11,21 +11,21 @@ export default function LoginForm() {
 
   const gotoMenu = () => {
     Alert.alert("Login feito com sucesso!")
-    router.push('/menu'); 
+    router.push('../menu'); 
   };
 
   const gotoCadastro = () => {
-    router.push('/cadastro'); 
+    router.push('../cadastro'); 
   };
 
   return (
     <View style={styles.container}>
       <Image 
-        source={require('../assets/images/logo.png')} 
+        source={require('../../assets/images/logo.png')} 
         style={styles.logo} 
       />
       <View style={styles.form}>
-        <Text style={styles.header}> Olá!</Text>
+        <Text style={styles.header}> Olá! </Text>
         <Text style={styles.text}>   Insira seu usuário e senha!</Text>
         <TextInput 
           style={styles.input}

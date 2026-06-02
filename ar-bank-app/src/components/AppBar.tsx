@@ -1,3 +1,4 @@
+import React from 'react';
 import Constants from 'expo-constants';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -13,16 +14,19 @@ export function AppBar({ title }: AppBarProps) {
   return (
     <View style={styles.container}>
       <View style={styles.content}>
+        {/* Logo do Banco */}
         <Image 
           source={require('../../assets/images/logo.png')} 
           style={styles.logo}
           resizeMode="contain"
         />
 
+        {/* Título Dinâmico (Ex: Bem-vindo, Usuário!) */}
         <Text style={styles.titulo}>{title}</Text>
 
+        {/* Botão do Perfil que agora leva direto para a nova tela unificada */}
         <TouchableOpacity 
-          onPress={() => router.push('/app/gerenciarConta1')}
+          onPress={() => router.push('/gerenciarPerfil')} // Atualizado para a nova tela!
           style={styles.botaoConta}
         >
           <Image 
@@ -42,7 +46,6 @@ const styles = StyleSheet.create({
     width: "100%",
     marginBottom: 32,
     paddingTop: Constants.statusBarHeight, 
-    
   },
   content: {
     height: 70,
@@ -69,7 +72,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   iconConta: {
-    width: 50, // Ajustado para ser proporcional
+    width: 50, 
     height: 50,
   }
 });

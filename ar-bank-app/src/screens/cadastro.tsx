@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Image, Text, TextInput, StyleSheet, Alert, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StdButton } from '@/components/StdButton';
-import { Cores } from '../src/styles/global';
+import { Cores } from '../styles/global';
 
 export default function SignInForm() {
   const router = useRouter();
