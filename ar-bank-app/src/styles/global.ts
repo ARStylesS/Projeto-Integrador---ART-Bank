@@ -4,21 +4,21 @@ import { StyleSheet } from 'react-native';
 export const Cores = {
     azulEscuro: '#2920AA',
     azulClaro: '#2864E5',
-    azulFundo: '#b3c5f0',
+    azulFundo: '#e7eeff',
 
     rosa: '#FF1083',
     rosaFundo: '#FFD5DB',
     teal: '#34A89A',
-    tealFundo: '#D5F8E9',
+    tealFundo: '#f3fffa',
 
     amarelo: '#F6A40B',
     amareloFundo: '#FFEE8D',
     laranja: '#FF9500',
-    laranjaFundo: '#FFEBCC',
+    laranjaFundo: '#fff8ef',
     verde: '#1D9437',
-    verdeFundo: '#C9EEC6',
+    verdeFundo: '#fafffa',
     roxo: '#B918C2',
-    roxoFundo: '#ecb8e8',
+    roxoFundo: '#ffeffe',
 
     branco: '#ffffff',
     cinza: '#f4f4f4',

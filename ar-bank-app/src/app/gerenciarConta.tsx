@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StdButton } from '@/components/StdButton';
-import { Cores } from '../../src/styles/global';
+import { Cores } from '../styles/global';
 import { FloatingOptions } from '@/components/FloatingOptions';
 
 export default function GerenciarConta() {

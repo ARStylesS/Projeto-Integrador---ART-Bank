@@ -1,39 +1,27 @@
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
 import { MenuButton } from '@/components/MenuButton';
 import { FloatingOptions } from '@/components/FloatingOptions'; 
-import { Cores } from '../../src/styles/global';
+import { Cores } from '../../styles/global';
 import { AppBar } from '@/components/AppBar';
 import Olhoabrirfechar from '@/components/Olhoabrirfechar';
 
 export default function Menu() {
-  const router = useRouter();
+  const router = useRouter(); 
+  const { usuario } = useLocalSearchParams();
+
+  // Converte o JSON recebido para objeto
+  const dadosUsuario = usuario ? JSON.parse(usuario as string) : null;
+
   const [visivel, setVisivel] = useState(false);
-  
-  // O saldo simulado continua ativo aqui
-  const saldoSimulado = "R$ 1.250,50";
-
-  // Estado do nome do usuário inicia limpo para a futura API
-  const [nomeUsuario, setNomeUsuario] = useState('');
-
-  useEffect(() => {
-    async function carregarDadosUsuario() {
-      try {
-        // ─── SUA INTEGRAÇÃO DE API ENTRA AQUI ───
-        // const response = await api.get('/user/profile');
-        // setNomeUsuario(response.data.nome);
-        // ─────────────────────────────────────────
-      } catch (error) {
-        console.error("Erro ao carregar dados do usuário:", error);
-      }
-    }
-
-    carregarDadosUsuario();
-  }, []);
+  const [nomeUsuario, setNomeUsuario] = useState(dadosUsuario?.nome || '');
+  const [saldo, setSaldo] = useState(
+    dadosUsuario?.saldo ? `R$ ${Number(dadosUsuario.saldo).toFixed(2)}` : 'R$ 0,00'
+  );
 
   const gotoTransf = () => {
-    router.push('/transfer1'); 
+    router.push('/transfer'); 
   };
 
   return (
@@ -53,7 +41,7 @@ export default function Menu() {
           <Olhoabrirfechar visivel={visivel} />
           
           <Text style={styles.valorSaldo}>
-            {visivel ? saldoSimulado : "*********"}
+            {visivel ? saldo : "*********"}
           </Text>
         </View>
       </TouchableOpacity>
@@ -62,17 +50,17 @@ export default function Menu() {
       <MenuButton
         title="Fazer Transferência"
         onPress={gotoTransf}
-        imageSource={require('../assets/images/iconTransfer.png')} 
+        imageSource={require('../../../assets/images/iconTransfer.png')} 
       />
       <MenuButton
         title="Pedir Solicitação"
         onPress={gotoTransf}
-        imageSource={require('../assets/images/iconSolicite.png')} 
+        imageSource={require('../../../assets/images/iconSolicite.png')} 
       />
       <MenuButton
         title="Pagar Solicitação"
         onPress={gotoTransf}
-        imageSource={require('../assets/images/iconPaySolicite.png')} 
+        imageSource={require('../../../assets/images/iconPaySolicite.png')} 
       />
 
       <FloatingOptions />

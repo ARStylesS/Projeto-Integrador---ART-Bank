@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { AppBar } from '@/components/AppBar';
 import { Calendario } from '@/components/Calendario';
 import { StdButton } from '@/components/StdButton';
-import { Cores } from '../../src/styles/global';
+import { Cores } from '../../styles/global';
 
 export default function Extrato() {
   const router = useRouter();

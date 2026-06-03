@@ -1,13 +1,13 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, StyleProp, ViewStyle } from 'react-native';
-import { Cores } from '../styles/global';
+import { Cores } from '@/styles/global';
 
 interface StdButtonProps {
   title: string;
   onPress: () => void;
-  backgroundColor?: string; // Cor de fundo opcional
-  textColor?: string;       // Cor do texto opcional
-  style?: StyleProp<ViewStyle>; // Para outras customizações de layout
+  backgroundColor?: string; 
+  textColor?: string;       
+  style?: StyleProp<ViewStyle>; 
 }
 
 export function StdButton({ 
@@ -41,7 +41,7 @@ export function StdButton({
 
 const styles = StyleSheet.create({
   btn: { 
-    backgroundColor: Cores.azulEscuro, // Cor padrão se não informar nada
+    backgroundColor: Cores.azulEscuro, 
     padding: 15, 
     borderRadius: 10,
     width: '100%',
@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   text: { 
-    color: '#fff', // Cor padrão (branco)
+    color: '#fff', 
     fontWeight: 'bold',
     fontSize: 16,
   }

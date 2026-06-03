@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, StyleSheet, Text, ScrollView, Image, TouchableOpacity, Modal, TouchableWithoutFeedback } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StdButton } from '@/components/StdButton';
-import { Cores } from '../../src/styles/global';
+import { Cores } from '../styles/global';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function GerenciarPerfil() {
@@ -47,7 +47,7 @@ export default function GerenciarPerfil() {
             {/* Foto de Perfil com botão para alterar */}
             <View style={styles.avatarContainer}>
               <Image 
-                source={require('../assets/images/iconProfile.png')} 
+                source={require('../../assets/images/iconProfile.png')} 
                 style={styles.avatar} 
               />
               <TouchableOpacity style={styles.editPhotoBadge} onPress={handleAlterarFoto}>
