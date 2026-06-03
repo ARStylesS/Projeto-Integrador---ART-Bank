@@ -23,7 +23,17 @@ Funcionalidades secundárias do projeto:
 
 Esse projeto será feito com React Native (incluindo HTML, CSS e JavaScript) para criar uma aplicação mobile funcional
 
-Depois de clonar o repositório, insira not terminal:
+Depois de clonar o repositório, insira no terminal:
+
+> cd ar-bank-api
+> npm install
+> npx prisma migrate dev --name banco-de-dados
+> npx prisma migrate
+> npm run prisma migrate deploy
+> npm run db:studio
+
+> cd ..
+> cd ar-bank-app
 > npm install
 > npx expo install expo-constants
 > npx expo install expo-splash-screen
