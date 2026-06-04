@@ -1,0 +1,24 @@
+# NODE / NPM
+
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+pnpm-lock.yaml
+
+# EXPO / REACT native
+
+.expo/
+dist/
+web-build/
+
+# IDEs / EDITORES DE CÓDIGO
+
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp

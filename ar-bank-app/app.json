@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "AR Bank",
+    "slug": "AR Bank",
+    "version": "1.0.0",
+    "srcDir": "src",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "myapp",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router"
+    ]
+  }
+}
