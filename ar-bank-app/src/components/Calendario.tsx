@@ -16,20 +16,29 @@ interface CalendarioProps {
 }
 
 export function Calendario({ transacoes }: CalendarioProps) {
+  // Garantia absoluta de que "transacoes" é um array antes de executar qualquer lógica
+  const listaTransacoes = Array.isArray(transacoes) ? transacoes : [];
+
   return (
     <View style={styles.cardExtrato}>
       <Text style={styles.tituloSecao}>Histórico de Atividades</Text>
 
-      {transacoes.length === 0 ? (
+      {listaTransacoes.length === 0 ? (
         <Text style={styles.textoVazio}>Nenhuma transação encontrada neste período.</Text>
       ) : (
-        transacoes.map((item) => {
+        listaTransacoes.map((item) => {
+          // Validação individual do item para evitar crash caso a transação venha incompleta do banco
+          if (!item || !item.dataTransacao) return null;
+
           const data = new Date(item.dataTransacao);
           const dataFormatada = data.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
           const horario = data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+          
           const descricao = item.tipo === 'RECEBIDO'
-            ? `Recebido de ${item.remetente}`
-            : `Enviado para ${item.destinatario}`;
+            ? `Recebido de ${item.remetente || 'Usuário'}`
+            : `Enviado para ${item.destinatario || 'Usuário'}`;
+
+          const valorValido = typeof item.valor === 'number' ? item.valor : 0;
 
           return (
             <View key={item.id} style={styles.itemTransacao}>
@@ -40,7 +49,7 @@ export function Calendario({ transacoes }: CalendarioProps) {
               <View style={styles.containerInfo}>
                 <Text style={styles.txtDescricao}>{descricao}</Text>
                 <Text style={[styles.txtValor, { color: item.tipo === 'RECEBIDO' ? '#2e7d32' : '#e74c3c' }]}>
-                  {item.tipo === 'RECEBIDO' ? '+' : '-'} R$ {item.valor.toFixed(2)}
+                  {item.tipo === 'RECEBIDO' ? '+' : '-'} R$ {valorValido.toFixed(2)}
                 </Text>
               </View>
             </View>

@@ -3,15 +3,23 @@ import { View, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Cores } from '../styles/global'; 
 
-export function FloatingOptions() {
+// Definição da tipagem das propriedades aceitas pelo componente
+interface FloatingOptionsProps {
+  usuarioId: string;
+}
+
+export function FloatingOptions({ usuarioId }: FloatingOptionsProps) {
   const router = useRouter();
 
   return (
     <View style={styles.container}>
-      {/* Botão 1: Casa */}
+      {/* Botão 1: Casa / Menu */}
       <TouchableOpacity 
         style={[styles.button, { backgroundColor: Cores.branco }]} 
-        onPress={() => router.replace('/menu')}
+        onPress={() => router.replace({
+          pathname: '/menu',
+          params: { id: usuarioId }
+        })}
       >
         <Image 
           source={require('../../assets/images/iconhome.png')} 
@@ -19,10 +27,13 @@ export function FloatingOptions() {
         />
       </TouchableOpacity>
 
-      {/* Botão 2: Extrato (Atualizado para a rota limpa /extrato) */}
+      {/* Botão 2: Extrato */}
       <TouchableOpacity 
         style={[styles.button, { backgroundColor: Cores.branco }]} 
-        onPress={() => router.push('/extrato')} // Alterado de '/extrato1' para '/extrato'
+        onPress={() => router.push({
+          pathname: '/extrato',
+          params: { id: usuarioId }
+        })}
       >
         <Image 
           source={require('../../assets/images/iconExtrato.png')} 
@@ -33,7 +44,10 @@ export function FloatingOptions() {
       {/* Botão 3: Emprestimo */}
       <TouchableOpacity 
         style={[styles.button, { backgroundColor: Cores.branco }]} 
-        onPress={() => router.push('/emprestimo1')}
+        onPress={() => router.push({
+          pathname: '/emprestimo1',
+          params: { id: usuarioId }
+        })}
       >
         <Image 
           source={require('../../assets/images/iconLoan.png')} 
@@ -44,7 +58,10 @@ export function FloatingOptions() {
       {/* Botão 4: Loteria */}
       <TouchableOpacity 
         style={[styles.button, { backgroundColor: Cores.branco }]} 
-        onPress={() => router.push('/loteria1')}
+        onPress={() => router.push({
+          pathname: '/loteria1',
+          params: { id: usuarioId }
+        })}
       >
         <Image 
           source={require('../../assets/images/iconLottery.png')} 

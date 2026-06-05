@@ -4,6 +4,12 @@ import { useRouter } from 'expo-router';
 import { StdButton } from '@/components/StdButton';
 import { Cores } from '../../styles/global';
 
+// Altere o IP abaixo para o IP da sua máquina se for testar em celular físico real
+const IP_COMPUTADOR = 'localhost'; 
+
+const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 
+  (Platform.OS === 'web' ? `http://${IP_COMPUTADOR}:3333` : 'http://10.0.2.2:3333');
+
 export default function LoginForm() {
   const router = useRouter();
   const [email, setemail] = useState('');
@@ -13,38 +19,68 @@ export default function LoginForm() {
     router.push('/cadastro'); 
   };
 
-  const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3333';
-
-const handleLogin = async () => {
-  try {
-    const resposta = await fetch(`${API_URL}/auth/login`, {  // ✅ direto no Express
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, senha }),
-    });
-
-    const dados = await resposta.json();
-
-    if (!resposta.ok) {
-      const mensagem = dados.erro ?? 'Usuário ou senha incorretos.';
-      if (Platform.OS === 'web') {
-        alert('Erro: ' + mensagem);
-      } else {
-        Alert.alert('Erro', mensagem);
-      }
+  const handleLogin = async () => {
+    if (!email || !senha) {
+      const msgValidacao = 'Preencha todos os campos';
+      if (Platform.OS === 'web') alert(msgValidacao);
+      else Alert.alert('Erro', msgValidacao);
       return;
     }
 
-    router.push({ pathname: '/menu', params: { usuario: JSON.stringify(dados.usuario) } });
+    try {
+      // CORREÇÃO: Adicionado o prefixo '/auth' exigido pelo app.use('/auth', authRoutes) do seu server.ts
+      const urlFinal = `${API_URL}/auth/login`;
 
-  } catch (error) {
-    if (Platform.OS === 'web') {
-      alert('Erro: Não foi possível conectar ao servidor.');
-    } else {
-      Alert.alert('Erro', 'Não foi possível conectar ao servidor.');
+      console.log(`[HTTP] Conectando em: ${urlFinal}`);
+
+      const resposta = await fetch(urlFinal, {   
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), senha }),
+      });
+
+      const textoBruto = await resposta.text();
+      let dados;
+
+      try {
+        dados = JSON.parse(textoBruto);
+      } catch {
+        throw new Error(`O endpoint respondeu em formato inválido (HTML). Verifique o console do backend.`);
+      }
+
+      if (!resposta.ok) {
+        const msgErro = dados.erro || 'E-mail ou senha incorretos.';
+        if (Platform.OS === 'web') alert(msgErro);
+        else Alert.alert('Erro', msgErro);
+        return;
+      }
+
+      const usuarioValido = dados.usuario || (Array.isArray(dados) ? dados[0] : dados);
+
+      if (!usuarioValido || (!usuarioValido.id && !usuarioValido._id)) {
+        throw new Error('A resposta de login foi bem-sucedida, mas faltam dados do usuário.');
+      }
+
+      const idFinal = String(usuarioValido.id || usuarioValido._id);
+
+      if (Platform.OS === 'web') {
+        localStorage.setItem('@ARBank:user', JSON.stringify(usuarioValido));
+      }
+
+      router.replace({ 
+        pathname: '/menu', 
+        params: { id: idFinal, usuario: JSON.stringify(usuarioValido) } 
+      });
+
+    } catch (error: any) {
+      console.error("Erro detalhado no fluxo de login:", error);
+      
+      const msgFalha = `Falha ao conectar: ${error.message}`;
+        
+      if (Platform.OS === 'web') alert(msgFalha);
+      else Alert.alert('Erro de Rede', 'Não foi possível conectar ao servidor.');
     }
-  }
-};
+  };
 
   return (
     <View style={styles.container}>
@@ -62,6 +98,8 @@ const handleLogin = async () => {
           placeholder="Seu email aqui"
           value={email}
           onChangeText={setemail}
+          keyboardType="email-address"
+          autoCapitalize="none"
         />
         
         <TextInput 
@@ -70,6 +108,7 @@ const handleLogin = async () => {
           secureTextEntry={true}
           value={senha}
           onChangeText={setSenha}
+          autoCapitalize="none"
         />
         
         <StdButton title="Entrar" onPress={handleLogin} />
@@ -85,46 +124,10 @@ const handleLogin = async () => {
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center", // Centraliza o formulário na tela
-    backgroundColor: Cores.azulClaro,
-  },
-  form: { 
-    width: "80%", // Aumentei um pouco para ficar melhor em telas menores
-    padding: 24,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    shadowColor: "#000", // Adiciona uma sombrinha de leve no card
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  header:{
-    fontFamily: "sans-serif",
-    fontWeight: 'bold',
-    fontSize: 32,
-    marginBottom: 8,
-  },
-  text: {
-    fontFamily: "sans-serif",
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 32,
-  },
-  input: { 
-    width: "100%",
-    borderBottomWidth: 1, 
-    borderBottomColor: '#ccc',
-    marginBottom: 32, 
-    padding: 8, 
-  },
-  logo: {
-    width: 150,
-    height: 150,
-    marginBottom: 40,
-  },
+  container: { flex: 1, flexDirection: "column", alignItems: "center", justifyContent: "center", backgroundColor: Cores.azulClaro },
+  form: { width: "80%", padding: 24, backgroundColor: "#FFFFFF", borderRadius: 12, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 5 },
+  header:{ fontFamily: "sans-serif", fontWeight: 'bold', fontSize: 32, marginBottom: 8 },
+  text: { fontFamily: "sans-serif", fontSize: 16, color: '#666', marginBottom: 32 },
+  input: { width: "100%", borderBottomWidth: 1, borderBottomColor: '#ccc', marginBottom: 32, padding: 8, fontSize: 16, color: '#333' },
+  logo: { width: 150, height: 150, marginBottom: 40 },
 });

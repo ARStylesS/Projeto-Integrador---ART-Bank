@@ -1,48 +1,38 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
-}
-
-// 1. Modelo de Usuário
 model Usuario {
-  id               String   @id @default(uuid())
-  nome             String
-  email            String   @unique
-  telefone         String
-  senhaUsuario     String 
-  saldo            Decimal  @db.Decimal(10, 2)
-
-  // Relacionamentos: Um usuário pode enviar ou receber muitas transferências
-  transferenciasEnviadas  Transferencia[] @relation("Remetente")
+  id                      String          @id @default(uuid())
+  nome                    String
+  email                   String          @unique
+  telefone                String
+  senhaUsuario            String
+  saldo                   Decimal         @db.Decimal(10, 2)
+  agencia                 String          @default("0001") 
+  conta                   String          @unique          
+  criadoEm                DateTime        @default(now())
   transferenciasRecebidas Transferencia[] @relation("Destinatario")
-
-  criadoEm         DateTime @default(now())
+  transferenciasEnviadas  Transferencia[] @relation("Remetente")
 
   @@map("usuarios")
 }
 
-// 2. Modelo de Transferência
 model Transferencia {
-  id               String   @id @default(uuid())
-  valor            Decimal  @db.Decimal(10, 2) 
-  
-  // Quem está enviando (Conectado à tabela Usuario)
-  remetenteId      String
-  remetente        Usuario  @relation("Remetente", fields: [remetenteId], references: [id])
-  
-  // Quem está recebendo (Conectado à tabela Usuario)
-  destinatarioId   String
-  destinatario     Usuario  @relation("Destinatario", fields: [destinatarioId], references: [id])
-
-  // Datas e Agendamento
-  dataTransacao    DateTime @default(now()) 
-  dataRecebimento  DateTime                 
-  
-  status           String   @default("CONCLUIDO") 
+  id              String   @id @default(uuid())
+  valor           Decimal  @db.Decimal(10, 2)
+  remetenteId     String
+  destinatarioId  String
+  dataTransacao   DateTime @default(now())
+  dataRecebimento DateTime
+  status          String   @default("CONCLUIDO")
+  destinatario    Usuario  @relation("Destinatario", fields: [destinatarioId], references: [id])
+  remetente       Usuario  @relation("Remetente", fields: [remetenteId], references: [id])
 
   @@map("transferencias")
 }
