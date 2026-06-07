@@ -4,36 +4,27 @@ import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Cores } from '../styles/global';
 
+// Adiciona usuarioId na interface
 interface AppBarProps {
   title: string;
+  usuarioId: string; // ← novo
 }
 
-export function AppBar({ title }: AppBarProps) {
+export function AppBar({ title, usuarioId }: AppBarProps) {
   const router = useRouter();
-
   return (
     <View style={styles.container}>
       <View style={styles.content}>
-        {/* Logo do Banco */}
-        <Image 
-          source={require('../../assets/images/logo.png')} 
-          style={styles.logo}
-          resizeMode="contain"
-        />
-
-        {/* Título Dinâmico (Ex: Bem-vindo, Usuário!) */}
+        <Image source={require('../../assets/images/logo.png')} style={styles.logo} resizeMode="contain" />
         <Text style={styles.titulo}>{title}</Text>
-
-        {/* Botão do Perfil que agora leva direto para a nova tela unificada */}
-        <TouchableOpacity 
-          onPress={() => router.push('/gerenciarPerfil')} // Atualizado para a nova tela!
+        <TouchableOpacity
+          onPress={() => router.push({
+            pathname: '/dadosPerfil',
+            params: { id: usuarioId } // ← passa o ID
+          })}
           style={styles.botaoConta}
         >
-          <Image 
-            source={require('../../assets/images/iconProfile.png')} 
-            style={styles.iconConta}
-            resizeMode="contain"
-          />
+          <Image source={require('../../assets/images/iconProfile.png')} style={styles.iconConta} resizeMode="contain" />
         </TouchableOpacity>
       </View>
     </View>

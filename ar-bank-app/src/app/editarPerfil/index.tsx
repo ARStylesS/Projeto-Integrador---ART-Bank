@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, ScrollView, Alert, Platform, ActivityIndicator,
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { StdButton } from '@/components/StdButton';
 import { Cores } from '../../styles/global';
-import { FloatingOptions } from '@/components/FloatingOptions';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 
   (Platform.OS === 'web' ? 'http://localhost:3333' : 'http://10.0.2.2:3333');
@@ -90,7 +89,7 @@ export default function EditarPerfil() {
         else Alert.alert('Sucesso', 'Perfil atualizado com sucesso!');
         
         router.replace({
-          pathname: '/gerenciarPerfil',
+          pathname: '/menu',
           params: { id: usuarioId }
         });
       } else {
@@ -151,21 +150,32 @@ export default function EditarPerfil() {
           <StdButton 
             title={salvando ? "Salvando..." : "Salvar Alterações"} 
             onPress={handleSalvar}
+          style={styles.button}/>
+
+          <StdButton 
+            title="Cancelar" 
+            onPress={() => router.replace({
+              pathname: '/dadosPerfil',
+              params: { id: usuarioId }
+            })}
+            backgroundColor={Cores.branco}
+            textColor={Cores.azulEscuro}
+            style={styles.button2}
           />
         </View>
       </ScrollView>
-      
-      <FloatingOptions usuarioId={usuarioId} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, width: "100%", flexDirection: "column", backgroundColor: Cores.azulClaro, padding: 20 },
-  scrollContent: { paddingBottom: 110, width: '100%', alignItems: 'center', paddingVertical: 20, flexGrow: 1 },
+  container: { flex: 1, width: "100%", flexDirection: "column", backgroundColor: Cores.azulEscuro, padding: 20 },
+  scrollContent: { paddingBottom: 110, width: '100%', alignItems: 'center', paddingVertical: 20, paddingHorizontal: 40, flexGrow: 1 },
   form: { padding: 24, backgroundColor: "#FFFFFF", borderRadius: 12, width: '100%' },
   header: { fontWeight: 'bold', fontSize: 24, marginBottom: 32 },
   label: { fontSize: 14, marginBottom: 6, color: '#666', fontWeight: '500' },
+  button: { marginTop: 64 },
+  button2: { marginTop: 16},
   input: { 
     width: '100%', 
     height: 50, 

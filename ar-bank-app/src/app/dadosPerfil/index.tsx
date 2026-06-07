@@ -4,6 +4,7 @@ import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { StdButton } from '@/components/StdButton';
 import { Cores } from '../../styles/global';
 import { Ionicons } from '@expo/vector-icons';
+import { AppBar } from '@/components/AppBar';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? (Platform.OS === 'web' ? 'http://localhost:3333' : 'http://10.0.2.2:3333');
 
@@ -44,8 +45,6 @@ export default function GerenciarPerfil() {
   const [conta, setConta] = useState('--------');
   const [saldo, setSaldo] = useState(0);
 
-  const [menuConfigVisivel, setMenuConfigVisivel] = useState(false);
-
   useFocusEffect(
     useCallback(() => {
       async function carregarDadosPerfil() {
@@ -60,8 +59,8 @@ export default function GerenciarPerfil() {
             console.log("[API SUCCESS] Corpo completo retornado pela API:", dados);
             
             setNome(dados.nome || "Sem Nome");
-            setEmail(dados.email || "Sem E-mail");
-            setTelefone(dados.telefone || dados.telefoneUsuario || "Sem Telefone");
+            setEmail("Email cadastrado: " + (dados.email || "Sem E-mail"));
+            setTelefone("Telefone: " + (dados.telefone || dados.telefoneUsuario || "Sem Telefone"));
             setSaldo(Number(dados.saldo) || 0);
             
             // Tratamento flexível caso agência/conta venham aninhados ou com nomes diferentes na API
@@ -116,6 +115,13 @@ export default function GerenciarPerfil() {
     setSaldo(0);
     router.replace('/'); 
   };
+
+  const handleEditarPerfil = () => {
+  router.push({
+    pathname: '/editarPerfil',
+    params: { id: usuarioId }
+  });
+};
 
   const handleExcluirConta = () => {
     const executarExclusao = async () => {
@@ -185,6 +191,7 @@ export default function GerenciarPerfil() {
 
   return (
     <View style={styles.container}>
+      <AppBar title="Dados do Perfil" usuarioId={usuarioId} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <View style={styles.profileCard}>
           <View style={styles.profileHeader}>
@@ -201,7 +208,7 @@ export default function GerenciarPerfil() {
               <Text style={styles.userSubtext}>{telefone || "Telefone não informado"}</Text>
             </View>
 
-            <TouchableOpacity style={styles.configButton} onPress={() => setMenuConfigVisivel(true)}>
+            <TouchableOpacity style={styles.configButton} onPress={handleEditarPerfil}>
               <Ionicons name="settings-outline" size={26} color={Cores.azulEscuro} />
             </TouchableOpacity>
           </View>
@@ -227,68 +234,18 @@ export default function GerenciarPerfil() {
 
           <View style={styles.divider} />
 
-          <StdButton title="Voltar à Tela Inicial" onPress={gotoMenu} backgroundColor={Cores.azulClaro} />
-          <StdButton title="Sair do Aplicativo" onPress={handleSair} backgroundColor="#9e9e9e" />
+          <StdButton title="Voltar ao Menu" onPress={gotoMenu} backgroundColor={Cores.azulClaro} />
+          <StdButton title="Sair da Conta" onPress={handleSair} backgroundColor="#9e9e9e" />
           <StdButton title="Excluir a Conta" onPress={handleExcluirConta} backgroundColor="#e53935" />
         </View>
       </ScrollView>
-
-      <Modal animationType="slide" transparent={true} visible={menuConfigVisivel} statusBarTranslucent={true} onRequestClose={() => setMenuConfigVisivel(false)}>
-        <TouchableWithoutFeedback onPress={() => setMenuConfigVisivel(false)}>
-          <View style={styles.sheetOverlay}>
-            <TouchableWithoutFeedback>
-              <View style={styles.sheetContent}>
-                <View style={styles.sheetIndicator} />
-                <View style={styles.sheetHeader}>
-                  <Text style={styles.sheetTitle}>Configurações</Text>
-                  <TouchableOpacity onPress={() => setMenuConfigVisivel(false)}>
-                    <Ionicons name="close-circle" size={24} color="#ccc" />
-                  </TouchableOpacity>
-                </View>
-
-                <TouchableOpacity style={styles.sheetOption} onPress={() => { setMenuConfigVisivel(false); router.push({ pathname: '/editarPerfil', params: { id: usuarioId } }); }}>
-                  <View style={styles.iconBackground}>
-                    <Ionicons name="person-outline" size={20} color={Cores.azulEscuro} />
-                  </View>
-                  <Text style={styles.sheetOptionText}>Editar dados do perfil</Text>
-                  <Ionicons name="chevron-forward" size={18} color="#ccc" />
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.sheetOption} onPress={() => { setMenuConfigVisivel(false); alert('Segurança'); }}>
-                  <View style={styles.iconBackground}>
-                    <Ionicons name="shield-half-outline" size={20} color={Cores.azulEscuro} />
-                  </View>
-                  <Text style={styles.sheetOptionText}>Segurança e Senhas</Text>
-                  <Ionicons name="chevron-forward" size={18} color="#ccc" />
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.sheetOption} onPress={() => { setMenuConfigVisivel(false); alert('Notificações'); }}>
-                  <View style={styles.iconBackground}>
-                    <Ionicons name="notifications-outline" size={20} color={Cores.azulEscuro} />
-                  </View>
-                  <Text style={styles.sheetOptionText}>Configurar Notificações</Text>
-                  <Ionicons name="chevron-forward" size={18} color="#ccc" />
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.sheetOption} onPress={() => { setMenuConfigVisivel(false); alert('Ajuda'); }}>
-                  <View style={styles.iconBackground}>
-                    <Ionicons name="help-circle-outline" size={20} color={Cores.azulEscuro} />
-                  </View>
-                  <Text style={styles.sheetOptionText}>Me ajuda / Suporte</Text>
-                  <Ionicons name="chevron-forward" size={18} color="#ccc" />
-                </TouchableOpacity>
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, width: "100%", backgroundColor: Cores.azulClaro },
-  scrollContent: { paddingBottom: 40, width: '100%', alignItems: 'center', paddingVertical: 20, paddingHorizontal: 20, flexGrow: 1 },
+  container: { flex: 1, width: "100%", backgroundColor: Cores.azulEscuro },
+  scrollContent: { paddingBottom: 40, width: '100%', alignItems: 'center', paddingVertical: 20, paddingHorizontal: 40, flexGrow: 1 },
   profileCard: { backgroundColor: "#FFFFFF", borderRadius: 12, padding: 20, width: '100%', marginBottom: 16 },
   profileHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   avatarContainer: { position: 'relative' },

@@ -16,9 +16,13 @@ model Usuario {
   saldo                   Decimal         @db.Decimal(10, 2)
   agencia                 String          @default("0001") 
   conta                   String          @unique          
+  fichas  Int  @default(0)
   criadoEm                DateTime        @default(now())
   transferenciasRecebidas Transferencia[] @relation("Destinatario")
   transferenciasEnviadas  Transferencia[] @relation("Remetente")
+  solicitacoes            Solicitacao[]
+  emprestimos             Emprestimo[] 
+
 
   @@map("usuarios")
 }
@@ -35,4 +39,32 @@ model Transferencia {
   remetente       Usuario  @relation("Remetente", fields: [remetenteId], references: [id])
 
   @@map("transferencias")
+}
+
+model Solicitacao {
+  id          String   @id @default(uuid())
+  codigo      String   @unique
+  solicitanteId String
+  valor       Decimal  @db.Decimal(10, 2)
+  status      String   @default("PENDENTE")
+  criadoEm   DateTime @default(now())
+  expiradoEm  DateTime
+  solicitante Usuario  @relation(fields: [solicitanteId], references: [id])
+
+  @@map("solicitacoes")
+}
+
+model Emprestimo {
+  id            String   @id @default(uuid())
+  usuarioId     String
+  valor         Decimal  @db.Decimal(10, 2)
+  parcelas      Int
+  taxaMensal    Decimal  @db.Decimal(5, 4)
+  valorParcela  Decimal  @db.Decimal(10, 2)
+  montanteFinal Decimal  @db.Decimal(10, 2)
+  status        String   @default("ATIVO")
+  criadoEm      DateTime @default(now())
+  usuario       Usuario  @relation(fields: [usuarioId], references: [id])
+
+  @@map("emprestimos")
 }

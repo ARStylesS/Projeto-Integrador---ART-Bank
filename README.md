@@ -28,8 +28,8 @@ Para rodar o servidor do back-end, abra um terminal e insira:
 ``` bash
 cd ar-bank-api
 npm install
-npx prisma migrate dev --name banco-de-dados
-npx prisma migrate deploy
+npx prisma generate //insira somente se for a primeira vez clonando
+npm run dev
 
 ```
 Para rodar o front-end e expo, abra outro terminal e insira:

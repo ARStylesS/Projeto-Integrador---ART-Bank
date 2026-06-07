@@ -49,15 +49,21 @@ export default function Menu() {
   );
 
   const gotoTransf = () => {
-    router.push({
-      pathname: '/transfer',
-      params: { id: usuarioId },
-    });
-  };
+  router.push({
+    pathname: '/transfer',
+    params: {
+      usuario: JSON.stringify({
+        id: usuarioId,
+        nome: nomeUsuario,
+        saldo: saldo
+      })
+    },
+  });
+};
 
   return (
     <View style={styles.container}>
-      <AppBar title={`Bem-vindo, ${nomeUsuario || "Usuário"}!`}/>
+      <AppBar title={`Bem-vindo, ${nomeUsuario || "Usuário"}!`} usuarioId={usuarioId}/>
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <TouchableOpacity style={styles.cardSaldo} onPress={() => setVisivel(!visivel)} activeOpacity={0.8}>
@@ -70,9 +76,21 @@ export default function Menu() {
           </View>
         </TouchableOpacity>
 
-        <MenuButton title="Fazer Transferência" onPress={gotoTransf} imageSource={require('../../../assets/images/iconTransfer.png')} />
-        <MenuButton title="Pedir Solicitação" onPress={gotoTransf} imageSource={require('../../../assets/images/iconSolicite.png')} />
-        <MenuButton title="Pagar Solicitação" onPress={gotoTransf} imageSource={require('../../../assets/images/iconPaySolicite.png')} />
+        <MenuButton 
+          title="Fazer Transferência" 
+          onPress={gotoTransf} 
+          imageSource={require('../../../assets/images/iconTransfer.png')} 
+        />
+        <MenuButton 
+          title="Gerar Solicitação" 
+          onPress={() => router.push({ pathname: '/gerarSolicitacao', params: { id: usuarioId } })} 
+          imageSource={require('../../../assets/images/iconSolicite.png')} 
+        />
+        <MenuButton 
+          title="Pagar Solicitação" 
+          onPress={() => router.push({ pathname: '/pagarSolicitacao', params: { id: usuarioId } })}
+          imageSource={require('../../../assets/images/iconPaySolicite.png')} 
+        />
       </ScrollView>
 
       {/* Certifique-se de que o componente FloatingOptions consiga usar esse ID internamente para abrir a rota /gerenciarPerfil */}

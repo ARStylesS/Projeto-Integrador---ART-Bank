@@ -14,7 +14,7 @@ router.get('/:id', async (req, res) => {
     // 1. Executa uma query SQL pura para trazer TODAS as colunas existentes na tabela física,
     // ignorando eventuais desatualizações ou omissões do arquivo schema.prisma
     const dadosRaw: any[] = await prisma.$queryRaw`
-      SELECT * FROM "Usuario" WHERE "id" = ${id} LIMIT 1
+      SELECT * FROM "usuarios" WHERE "id" = ${id} LIMIT 1
     `;
 
     if (!dadosRaw || dadosRaw.length === 0) {
@@ -32,7 +32,8 @@ router.get('/:id', async (req, res) => {
       saldo: Number(usuario.saldo) || 0,
       // Captura as chaves independente de estarem em maiúsculas ou minúsculas no Postgres
       agencia: usuario.agencia || usuario.Agencia || '0001', 
-      conta: usuario.conta || usuario.Conta || '--------'
+      conta: usuario.conta || usuario.Conta || '--------',
+      fichas: usuario.fichas ?? 0,
     });
 
   } catch (error) {
@@ -62,6 +63,31 @@ router.put('/:id', async (req, res) => {
   } catch (error) {
     console.error('Erro ao atualizar perfil:', error);
     return res.status(500).json({ erro: 'Erro ao atualizar perfil.' });
+  }
+});
+
+router.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const usuarioExiste = await prisma.usuario.findUnique({
+      where: { id: String(id) }
+    });
+
+    if (!usuarioExiste) {
+      return res.status(404).json({ erro: 'Usuário não encontrado.' });
+    }
+
+    await prisma.usuario.delete({
+      where: { id: String(id) }
+    });
+
+    console.log(`[DELETE SUCESSO] Usuário ${id} excluído.`);
+    return res.status(200).json({ mensagem: 'Conta excluída com sucesso.' });
+
+  } catch (error) {
+    console.error('Erro ao excluir conta:', error);
+    return res.status(500).json({ erro: 'Erro interno ao excluir a conta.' });
   }
 });
 

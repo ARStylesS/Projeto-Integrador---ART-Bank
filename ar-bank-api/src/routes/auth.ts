@@ -63,4 +63,34 @@ router.post('/login', async (req: Request, res: Response) => {
   }
 });
 
+router.post('/validar-senha', async (req: Request, res: Response) => {
+  try {
+    const { usuarioId, senha } = req.body;
+
+    if (!usuarioId || !senha) {
+      return res.status(400).json({ erro: 'usuarioId e senha são obrigatórios.' });
+    }
+
+    const usuario = await prisma.usuario.findUnique({
+      where: { id: String(usuarioId) }
+    });
+
+    if (!usuario) {
+      return res.status(404).json({ erro: 'Usuário não encontrado.' });
+    }
+
+    const senhaValida = await bcrypt.compare(String(senha), usuario.senhaUsuario);
+
+    if (!senhaValida) {
+      return res.status(401).json({ erro: 'Senha incorreta.' });
+    }
+
+    return res.status(200).json({ mensagem: 'Senha válida.' });
+
+  } catch (error) {
+    console.error('Erro ao validar senha:', error);
+    return res.status(500).json({ erro: 'Erro interno ao validar senha.' });
+  }
+});
+
 export default router;

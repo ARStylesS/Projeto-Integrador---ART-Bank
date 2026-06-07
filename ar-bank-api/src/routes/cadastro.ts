@@ -46,36 +46,27 @@ router.post('/', async (req: Request, res: Response) => {
       }
     }
 
-    // Agência padrão fixa para banco digital
-    const SampleAgencia = '0001';
-
-    // 5. Inserção no banco de dados usando mapeamento flexível de dados
-    const payloadUsuario: any = {
-      nome,
-      email: email.toLowerCase(),
-      telefone,
-      senhaUsuario: senhaHash,
-      saldo: 100.00, // Crédito inicial de teste
-      agencia: SampleAgencia,
-      conta: contaGerada
-    };
-
     const novoUsuario = await prisma.usuario.create({
-      data: payloadUsuario
+      data: {
+        nome,
+        email: email.toLowerCase(),
+        telefone,
+        senhaUsuario: senhaHash,
+        saldo: 100.00,
+        agencia: '0001',
+        conta: contaGerada
+      }
     });
 
-    // Mapeia o retorno como any para evitar problemas de leitura de propriedades no TS
-    const usuarioRetorno = novoUsuario as any;
-
-    // 6. Resposta bem-sucedida para o front-end
     return res.status(201).json({
       mensagem: 'Cadastro realizado com sucesso!',
       usuario: {
-        id: usuarioRetorno.id,
-        nome: usuarioRetorno.nome,
-        email: usuarioRetorno.email,
-        agencia: usuarioRetorno.agencia ?? '0001',
-        conta: usuarioRetorno.conta
+        id: novoUsuario.id,
+        nome: novoUsuario.nome,
+        email: novoUsuario.email,
+        agencia: novoUsuario.agencia ?? '0001',
+        conta: novoUsuario.conta,
+        saldo: Number(novoUsuario.saldo)
       }
     });
 

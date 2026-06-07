@@ -5,6 +5,7 @@ import { AppBar } from '@/components/AppBar';
 import { Calendario } from '@/components/Calendario';
 import { StdButton } from '@/components/StdButton';
 import { Cores } from '../../styles/global';
+import { FloatingOptions } from '@/components/FloatingOptions';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? (Platform.OS === 'web' ? 'http://localhost:3333' : 'http://10.0.2.2:3333');
 
@@ -100,7 +101,7 @@ export default function Extrato() {
 
   return (
     <View style={styles.container}>
-      <AppBar title="Meu Extrato" />
+      <AppBar title="Meu Extrato" usuarioId={usuarioId}/>
 
       <View style={styles.layoutWrapper}>
         <ScrollView contentContainerStyle={styles.content} style={styles.scrollView} showsVerticalScrollIndicator={false}>
@@ -125,11 +126,8 @@ export default function Extrato() {
               )}
             </View>
           </View>
-
-          <View style={styles.btnWrapper}>
-            <StdButton title="Voltar à Tela Inicial" onPress={handleVoltar} backgroundColor={Cores.azulClaro} textColor="#FFFFFF" />
-          </View>
         </ScrollView>
+        <FloatingOptions usuarioId={usuarioId} />
       </View>
     </View>
   );

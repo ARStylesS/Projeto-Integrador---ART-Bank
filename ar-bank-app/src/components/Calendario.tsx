@@ -4,11 +4,14 @@ import { View, Text, StyleSheet } from 'react-native';
 interface Transacao {
   id: string;
   valor: number;
-  tipo: 'ENVIADO' | 'RECEBIDO';
+  tipo: 'ENVIADO' | 'RECEBIDO' | 'EMPRESTIMO';
+  descricao?: string;
   remetente: string;
   destinatario: string;
   status: string;
   dataTransacao: string;
+  parcelas?: number | null;
+  valorParcela?: number | null;
 }
 
 interface CalendarioProps {
@@ -16,29 +19,30 @@ interface CalendarioProps {
 }
 
 export function Calendario({ transacoes }: CalendarioProps) {
-  // Garantia absoluta de que "transacoes" é um array antes de executar qualquer lógica
   const listaTransacoes = Array.isArray(transacoes) ? transacoes : [];
 
   return (
     <View style={styles.cardExtrato}>
       <Text style={styles.tituloSecao}>Histórico de Atividades</Text>
-
       {listaTransacoes.length === 0 ? (
         <Text style={styles.textoVazio}>Nenhuma transação encontrada neste período.</Text>
       ) : (
         listaTransacoes.map((item) => {
-          // Validação individual do item para evitar crash caso a transação venha incompleta do banco
           if (!item || !item.dataTransacao) return null;
 
           const data = new Date(item.dataTransacao);
           const dataFormatada = data.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
           const horario = data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-          
-          const descricao = item.tipo === 'RECEBIDO'
-            ? `Recebido de ${item.remetente || 'Usuário'}`
-            : `Enviado para ${item.destinatario || 'Usuário'}`;
-
           const valorValido = typeof item.valor === 'number' ? item.valor : 0;
+
+          // Descrição e cor por tipo
+          const descricao = item.descricao
+            ?? (item.tipo === 'RECEBIDO'
+              ? `Recebido de ${item.remetente || 'Usuário'}`
+              : `Enviado para ${item.destinatario || 'Usuário'}`);
+
+          const corValor = item.tipo === 'ENVIADO' ? '#e74c3c' : '#2e7d32';
+          const prefixoValor = item.tipo === 'ENVIADO' ? '-' : '+';
 
           return (
             <View key={item.id} style={styles.itemTransacao}>
@@ -46,10 +50,21 @@ export function Calendario({ transacoes }: CalendarioProps) {
                 <Text style={styles.txtData}>{dataFormatada}</Text>
                 <Text style={styles.txtHorario}>{horario}</Text>
               </View>
+
               <View style={styles.containerInfo}>
-                <Text style={styles.txtDescricao}>{descricao}</Text>
-                <Text style={[styles.txtValor, { color: item.tipo === 'RECEBIDO' ? '#2e7d32' : '#e74c3c' }]}>
-                  {item.tipo === 'RECEBIDO' ? '+' : '-'} R$ {valorValido.toFixed(2)}
+                <View style={styles.containerDescricao}>
+                  <Text style={styles.txtDescricao}>{descricao}</Text>
+
+                  {/* Linha extra exclusiva para empréstimos */}
+                  {item.tipo === 'EMPRESTIMO' && item.parcelas && item.valorParcela && (
+                    <Text style={styles.txtDetalheEmprestimo}>
+                      {item.parcelas}x de R$ {item.valorParcela.toFixed(2)}
+                    </Text>
+                  )}
+                </View>
+
+                <Text style={[styles.txtValor, { color: corValor }]}>
+                  {prefixoValor} R$ {valorValido.toFixed(2)}
                 </Text>
               </View>
             </View>
@@ -114,10 +129,20 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  containerDescricao: {
+    flex: 1,
+    marginRight: 8,
+  },
   txtDescricao: {
     fontSize: 15,
     color: '#333',
     fontWeight: '500',
+  },
+  txtDetalheEmprestimo: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 3,
+    fontStyle: 'italic',
   },
   txtValor: {
     fontSize: 16,

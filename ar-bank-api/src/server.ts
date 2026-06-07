@@ -2,7 +2,13 @@ import express from 'express';
 import cors from 'cors';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
-import editarPerfilRoutes from './routes/editarPerfil'; 
+import editarPerfilRoutes from './routes/dadosPerfil'; 
+import authRoutes from './routes/auth';
+import transferenciaRoutes from './routes/transferencia';
+import extratoRoutes from './routes/extrato';
+import emprestimoRoutes from './routes/emprestimo';
+import cassinoRoutes from './routes/cassino';
+import solicitacaoRoutes from './routes/solicitacao';
 
 const app = express();
 const prisma = new PrismaClient();
@@ -17,12 +23,15 @@ app.use((req, res, next) => {
   next();
 });
 
-// Vincula as rotas do arquivo editarPerfil.ts (/perfil/:id)
 app.use('/perfil', editarPerfilRoutes);
+app.use('/auth', authRoutes);
+app.use('/transferencia', transferenciaRoutes);
+app.use('/extrato', extratoRoutes);
+app.use('/emprestimo', emprestimoRoutes);
+app.use('/cassino', cassinoRoutes);
+app.use('/solicitacao', solicitacaoRoutes);
 
-// ==========================================
 // ROTA DE CADASTRO COM CRIPTOGRAFIA (BCRYPT)
-// ==========================================
 app.post('/cadastro', async (req, res) => {
   try {
     const { nome, email, telefone, senha } = req.body;
@@ -55,7 +64,7 @@ app.post('/cadastro', async (req, res) => {
         email: emailFormatado,
         telefone: String(telefone).trim(),
         senhaUsuario: senhaCriptografada,
-        saldo: 0.00, 
+        saldo: 100.00, 
         agencia: "0001",
         conta: numeroConta
       }
@@ -70,9 +79,7 @@ app.post('/cadastro', async (req, res) => {
   }
 });
 
-// ==========================================
 // ROTA DE LOGIN COMPATÍVEL COM O SEU AUTH.TS
-// ==========================================
 app.post('/auth/login', async (req, res) => {
   try {
     const { email, senha } = req.body;

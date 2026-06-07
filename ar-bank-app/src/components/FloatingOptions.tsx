@@ -45,7 +45,7 @@ export function FloatingOptions({ usuarioId }: FloatingOptionsProps) {
       <TouchableOpacity 
         style={[styles.button, { backgroundColor: Cores.branco }]} 
         onPress={() => router.push({
-          pathname: '/emprestimo1',
+          pathname: '/emprestimo',
           params: { id: usuarioId }
         })}
       >
@@ -55,11 +55,11 @@ export function FloatingOptions({ usuarioId }: FloatingOptionsProps) {
         />
       </TouchableOpacity>
 
-      {/* Botão 4: Loteria */}
+      {/* Botão 4: Cassino */}
       <TouchableOpacity 
         style={[styles.button, { backgroundColor: Cores.branco }]} 
         onPress={() => router.push({
-          pathname: '/loteria1',
+          pathname: '/cassino',
           params: { id: usuarioId }
         })}
       >

@@ -106,7 +106,7 @@ export default function Transfer() {
   if (etapa === 'formulario') {
     return (
       <View style={styles.container}>
-        <AppBar title="Fazer Transferência" />
+        <AppBar title="Fazer Transferência" usuarioId={dadosUsuario?.id} />
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
           <View style={styles.form}>
             <Text style={styles.header}>Para quem deseja transferir?</Text>
@@ -146,7 +146,10 @@ export default function Transfer() {
                 <StdButton title="Continuar" onPress={handleContinuar} />
                 <StdButton
                   title="Cancelar"
-                  onPress={() => router.replace('/menu')}
+                  onPress={() => router.replace({
+                    pathname: '/menu',
+                    params: { id: dadosUsuario?.id }
+                  })}
                   backgroundColor={Cores.branco}
                   textColor={Cores.azulEscuro}
                 />
@@ -162,7 +165,7 @@ export default function Transfer() {
   if (etapa === 'confirmacao') {
     return (
       <View style={styles.container}>
-        <AppBar title="Fazer Transferência" />
+        <AppBar title="Fazer Transferência" usuarioId={dadosUsuario?.id} />
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
           <View style={styles.form}>
             <Text style={styles.header}>Confirme as informações</Text>
@@ -200,7 +203,7 @@ export default function Transfer() {
   // ─── ETAPA 3: Concluída ───────────────────────────────────────────────────
   return (
     <View style={styles.containerConcluida}>
-      <AppBar title="Fazer Transferência" />
+      <AppBar title="Fazer Transferência" usuarioId={dadosUsuario?.id} />
       <View style={styles.cardConcluida}>
         <Text style={styles.iconeSucesso}>✓</Text>
         <Text style={styles.header}>Transferência Concluída!</Text>
@@ -209,7 +212,10 @@ export default function Transfer() {
         </Text>
         <StdButton
           title="OK"
-          onPress={() => router.replace('/menu')}
+          onPress={() => router.replace({
+            pathname: '/menu',
+            params: { id: dadosUsuario?.id }
+          })}
           backgroundColor={Cores.verde}
           textColor={Cores.branco}
         />
