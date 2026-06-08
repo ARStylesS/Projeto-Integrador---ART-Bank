@@ -9,20 +9,23 @@ datasource db {
 
 model Usuario {
   id                      String          @id @default(uuid())
+  usuario                 String?         
   nome                    String
   email                   String          @unique
-  telefone                String
+  telefone                String?         
+  celular                 String          @default("") 
   senhaUsuario            String
   saldo                   Decimal         @db.Decimal(10, 2)
   agencia                 String          @default("0001") 
   conta                   String          @unique          
-  fichas  Int  @default(0)
+  fichas                  Int             @default(0)
+  genero                  String          @default("M") 
+  fotoUrl                 String?         
   criadoEm                DateTime        @default(now())
   transferenciasRecebidas Transferencia[] @relation("Destinatario")
   transferenciasEnviadas  Transferencia[] @relation("Remetente")
   solicitacoes            Solicitacao[]
   emprestimos             Emprestimo[] 
-
 
   @@map("usuarios")
 }
@@ -42,14 +45,14 @@ model Transferencia {
 }
 
 model Solicitacao {
-  id          String   @id @default(uuid())
-  codigo      String   @unique
+  id            String   @id @default(uuid())
+  codigo        String   @unique
   solicitanteId String
-  valor       Decimal  @db.Decimal(10, 2)
-  status      String   @default("PENDENTE")
-  criadoEm   DateTime @default(now())
-  expiradoEm  DateTime
-  solicitante Usuario  @relation(fields: [solicitanteId], references: [id])
+  valor         Decimal  @db.Decimal(10, 2)
+  status        String   @default("PENDENTE")
+  criadoEm      DateTime @default(now())
+  expiradoEm    DateTime
+  solicitante   Usuario  @relation(fields: [solicitanteId], references: [id])
 
   @@map("solicitacoes")
 }

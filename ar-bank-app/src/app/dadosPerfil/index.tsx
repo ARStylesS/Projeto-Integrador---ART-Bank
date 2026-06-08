@@ -1,38 +1,38 @@
-import React, { useState, useCallback } from 'react';
-import { View, StyleSheet, Text, ScrollView, Image, TouchableOpacity, Modal, TouchableWithoutFeedback, Alert, Platform } from 'react-native';
+import React, { useState, useCallback, useMemo } from 'react';
+import { View, StyleSheet, Text, ScrollView, Image, TouchableOpacity, Alert, Platform } from 'react-native';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { StdButton } from '@/components/StdButton';
 import { Cores } from '../../styles/global';
 import { Ionicons } from '@expo/vector-icons';
 import { AppBar } from '@/components/AppBar';
+import * as ImagePicker from 'expo-image-picker';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? (Platform.OS === 'web' ? 'http://localhost:3333' : 'http://10.0.2.2:3333');
 
-export default function GerenciarPerfil() {
+// MODIFICADO: Incluída a propriedade 'tipo' na assinatura do Cartão Virtual
+interface CartaoVirtual {
+  id: string;
+  numero: string;
+  bandeira: string;
+  tipo: 'Débito' | 'Crédito' | 'Múltiplo (C+D)';
+}
+
+export default function DadosPerfil() {
   const router = useRouter();
   const params = useLocalSearchParams();
   
   const obterUsuarioId = (): string => {
-    console.log("[DEBUG] Parâmetros brutos recebidos na rota Perfil:", params);
-
-    if (params.id) {
-      return String(params.id);
-    }
-    
+    if (params.id) return String(params.id);
     if (params.usuario) {
       try {
         const strUsuario = typeof params.usuario === 'string' ? params.usuario : String(params.usuario);
         const limpaString = strUsuario.startsWith('"') && strUsuario.endsWith('"') ? JSON.parse(strUsuario) : strUsuario;
         const parsed = typeof limpaString === 'object' ? limpaString : JSON.parse(limpaString);
-        
-        if (parsed && parsed.id) {
-          return String(parsed.id);
-        }
+        if (parsed && parsed.id) return String(parsed.id);
       } catch (e) {
         console.warn("[DEBUG] Erro ao fazer o parse do parâmetro 'usuario':", e);
       }
     }
-    
     return "1"; 
   };
 
@@ -40,163 +40,169 @@ export default function GerenciarPerfil() {
 
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
+  const [celular, setCelular] = useState('');
   const [telefone, setTelefone] = useState('');
   const [agencia, setAgencia] = useState('0001');
   const [conta, setConta] = useState('--------');
   const [saldo, setSaldo] = useState(0);
+  const [fotoPerfil, setFotoPerfil] = useState<string | null>(null);
+  const [fotoDoBanco, setFotoDoBanco] = useState<string | null>(null);
+  const [cartoesVirtuais, setCartoesVirtuais] = useState<CartaoVirtual[]>([]);
+
+  // NOVO ESTADO: Controla o tipo selecionado pelo usuário antes de criar
+  const [tipoCartaoSelecionado, setTipoCartaoSelecionado] = useState<'Débito' | 'Crédito' | 'Múltiplo (C+D)'>('Débito');
 
   useFocusEffect(
     useCallback(() => {
       async function carregarDadosPerfil() {
         const urlFinal = `${API_URL}/perfil/${usuarioId}`;
-        console.log(`[HTTP GET] Efetuando requisição para: ${urlFinal}`);
-
         try {
           const resposta = await fetch(urlFinal);
           const dados = await resposta.json();
-
           if (resposta.ok) {
-            console.log("[API SUCCESS] Corpo completo retornado pela API:", dados);
-            
             setNome(dados.nome || "Sem Nome");
             setEmail("Email cadastrado: " + (dados.email || "Sem E-mail"));
-            setTelefone("Telefone: " + (dados.telefone || dados.telefoneUsuario || "Sem Telefone"));
+            setTelefone("Telefone-Fixo: " + (dados.telefone || dados.telefoneUsuario || "Sem Telefone"));
+            setCelular("Celular: " + (dados.celular || "Sem Celular"));
             setSaldo(Number(dados.saldo) || 0);
-            
-            // Tratamento flexível caso agência/conta venham aninhados ou com nomes diferentes na API
+            setFotoPerfil(dados.fotoUrl || null);
+            setFotoDoBanco(dados.fotoUrl || null);
             const agenciaDetectada = dados.agencia || dados.agenciaUsuario || (dados.contaBancaria && dados.contaBancaria.agencia) || "0001";
             const contaDetectada = dados.conta || dados.numeroConta || dados.contaUsuario || (dados.contaBancaria && dados.contaBancaria.numeroConta) || "--------";
-
             setAgencia(String(agenciaDetectada));
             setConta(String(contaDetectada));
-
-          } else {
-            console.warn("[API ERROR] Resposta de erro do servidor:", dados.erro);
           }
         } catch (error) {
           console.error("[NET ERROR] Falha de rede ao conectar à API:", error);
         }
       }
-      
       carregarDadosPerfil();
     }, [usuarioId])
   );
 
-  const gotoMenu = () => {
-    if (router.canGoBack()) {
-      router.back();
-    } else {
-      const usuarioPayload = {
-        id: usuarioId,
-        nome: nome,
-        email: email,
-        telefone: telefone,
-        agencia: agencia,
-        conta: conta,
-        saldo: saldo
-      };
-
-      router.replace({
-        pathname: '/menu',
-        params: { id: usuarioId, usuario: JSON.stringify(usuarioPayload) }
-      });
+  const imagemPerfilCentral = useMemo(() => {
+    if (fotoPerfil) {
+      if (fotoPerfil.startsWith('file://') || fotoPerfil.startsWith('data:')) {
+        return { uri: fotoPerfil };
+      }
+      return { uri: `${fotoPerfil}?t=${new Date().getTime()}` };
     }
+    return require('../../../assets/images/iconProfile.png');
+  }, [fotoPerfil]);
+
+  // MODIFICADO: Agora injeta o tipo escolhido na criação do objeto
+  const handleAdicionarCartaoVirtual = () => {
+    if (cartoesVirtuais.length >= 3) {
+      if (Platform.OS === 'web') alert('Você atingiu o limite máximo de 3 cartões virtuais ativos.');
+      else Alert.alert('Limite Atingido', 'Você atingiu o limite máximo de 3 cartões virtuais ativos.');
+      return;
+    }
+
+    const quatroUltimosDigitos = Math.floor(1000 + Math.random() * 9000).toString();
+    const novoCartao: CartaoVirtual = {
+      id: Math.random().toString(),
+      numero: `•••• •••• •••• ${quatroUltimosDigitos}`,
+      bandeira: Math.random() > 0.5 ? 'Visa' : 'MasterCard',
+      tipo: tipoCartaoSelecionado // Armazena a seleção atual
+    };
+
+    setCartoesVirtuais([...cartoesVirtuais, novoCartao]);
+
+    if (Platform.OS === 'web') alert(`Cartão Virtual ${novoCartao.bandeira} (${novoCartao.tipo}) criado com sucesso!`);
+    else Alert.alert('Sucesso', `Cartão Virtual ${novoCartao.bandeira} (${novoCartao.tipo}) gerado com sucesso!`);
+  };
+
+  const handleExcluirCartaoVirtual = (id: string) => {
+    setCartoesVirtuais(cartoesVirtuais.filter(cartao => cartao.id !== id));
+  };
+
+  const gotoMenu = () => {
+    router.replace({ pathname: '/menu', params: { id: usuarioId } });
   };
 
   const handleSair = () => {
-    if (Platform.OS === 'web') {
-      localStorage.removeItem('@ARBank:user');
-    }
-    setNome('');
-    setEmail('');
-    setTelefone('');
-    setAgencia('0001');
-    setConta('--------');
-    setSaldo(0);
+    if (Platform.OS === 'web') localStorage.removeItem('@ARBank:user');
+    setNome(''); setEmail(''); setTelefone(''); setCelular('');
+    setAgencia('0001'); setConta('--------'); setSaldo(0);
+    setFotoPerfil(null); setFotoDoBanco(null); setCartoesVirtuais([]);
     router.replace('/'); 
   };
 
   const handleEditarPerfil = () => {
-  router.push({
-    pathname: '/editarPerfil',
-    params: { id: usuarioId }
-  });
-};
+    router.push({ pathname: '/editarPerfil', params: { id: usuarioId } });
+  };
 
   const handleExcluirConta = () => {
-    const executarExclusao = async () => {
+    const ejecutarExclusao = async () => {
       try {
-        console.log(`[HTTP DELETE] Iniciando requisição para: ${API_URL}/perfil/${usuarioId}`);
-        
-        const resposta = await fetch(`${API_URL}/perfil/${usuarioId}`, {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          }
-        });
-
-        const dados = await resposta.json();
-
+        const resposta = await fetch(`${API_URL}/perfil/${usuarioId}`, { method: 'DELETE' });
         if (resposta.ok) {
           if (Platform.OS === 'web') {
             alert('Sua conta foi excluída com sucesso.');
             localStorage.removeItem('@ARBank:user');
-          } else {
-            Alert.alert('Sucesso', 'Sua conta foi excluída com sucesso.');
-          }
-          
-          setNome('');
-          setEmail('');
-          setTelefone('');
-          setAgencia('0001');
-          setConta('--------');
-          setSaldo(0);
-          
+          } else Alert.alert('Sucesso', 'Sua conta foi excluída com sucesso.');
           router.replace('/');
-        } else {
-          const erroServidor = dados.erro || 'Não foi possível completar a exclusão.';
-          if (Platform.OS === 'web') alert(`Erro: ${erroServidor}`);
-          else Alert.alert('Erro', erroServidor);
         }
       } catch (error) {
-        console.error('[NET ERROR] Falha crítica ao disparar requisição DELETE:', error);
-        if (Platform.OS === 'web') {
-          alert('Erro de rede ao conectar com o servidor. Verifique se o backend está online.');
-        } else {
-          Alert.alert('Erro de Rede', 'Não foi possível estabelecer contato com o servidor local.');
-        }
+        console.error('[NET ERROR]', error);
       }
     };
 
     if (Platform.OS === 'web') {
-      const confirmou = window.confirm("Tem certeza absoluta que deseja excluir sua conta? Esta ação não pode ser desfeita.");
-      if (confirmou) executarExclusao();
+      if (window.confirm("Tem certeza absoluta que deseja excluir sua conta?")) ejecutarExclusao();
     } else {
-      Alert.alert(
-        'Excluir Conta',
-        'Tem certeza absoluta que deseja excluir sua conta? Esta ação é permanente e todos os seus dados serão apagados.',
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          { text: 'Excluir', style: 'destructive', onPress: executarExclusao },
-        ]
-      );
+      Alert.alert('Excluir Conta', 'Tem certeza permanente?', [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Excluir', style: 'destructive', onPress: ejecutarExclusao },
+      ]);
     }
   };
 
-  const handleAlterarFoto = () => {
-    if (Platform.OS === 'web') alert('Ação para upload de foto via API');
-    else Alert.alert('Ação para upload de foto via API');
+  const enviarFotoParaServidor = async (uriSelecionada: string) => {
+    const formData = new FormData();
+    try {
+      if (Platform.OS === 'web') {
+        const respostaImg = await fetch(uriSelecionada);
+        const blob = await respostaImg.blob();
+        formData.append('foto', new File([blob], `avatar.jpeg`, { type: blob.type }));
+      } else {
+        formData.append('foto', {
+          uri: Platform.OS === 'android' ? uriSelecionada : uriSelecionada.replace('file://', ''),
+          name: 'avatar.jpg',
+          type: 'image/jpeg',
+        } as any);
+      }
+      const resposta = await fetch(`${API_URL}/perfil/${usuarioId}/foto`, { method: 'POST', body: formData });
+      const dados = await resposta.json();
+      if (resposta.ok) {
+        setFotoPerfil(dados.fotoUrl);
+        setFotoDoBanco(dados.fotoUrl);
+      }
+    } catch (erro) { console.error(erro); }
+  };
+
+  const handleAlterarFoto = async () => {
+    const resultado = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!resultado.canceled && resultado.assets.length > 0) {
+      const uriSelecionada = resultado.assets[0].uri;
+      enviarFotoParaServidor(uriSelecionada);
+    }
   };
 
   return (
     <View style={styles.container}>
-      <AppBar title="Dados do Perfil" usuarioId={usuarioId} />
+      <AppBar title="Dados do Perfil" usuarioId={usuarioId} fotoUrl={fotoPerfil} />
+      
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <View style={styles.profileCard}>
           <View style={styles.profileHeader}>
             <View style={styles.avatarContainer}>
-              <Image source={require('../../../assets/images/iconProfile.png')} style={styles.avatar} />
+              <Image source={imagemPerfilCentral} style={styles.avatar} resizeMode="cover" />
               <TouchableOpacity style={styles.editPhotoBadge} onPress={handleAlterarFoto}>
                 <Ionicons name="camera" size={16} color="#FFF" />
               </TouchableOpacity>
@@ -206,6 +212,7 @@ export default function GerenciarPerfil() {
               <Text style={styles.userName}>{nome || "Carregando nome..."}</Text>
               <Text style={styles.userSubtext}>{email || "E-mail não informado"}</Text>
               <Text style={styles.userSubtext}>{telefone || "Telefone não informado"}</Text>
+              <Text style={styles.userSubtext}>{celular || "Celular não informado"}</Text>
             </View>
 
             <TouchableOpacity style={styles.configButton} onPress={handleEditarPerfil}>
@@ -223,14 +230,55 @@ export default function GerenciarPerfil() {
           </View>
 
           <Text style={styles.sectionTitle}>Meus Cartões</Text>
-          <View style={styles.cardItem}>
-            <Ionicons name="card-outline" size={20} color="#555" style={{ marginRight: 8 }} />
-            <Text style={styles.subtext}>Cartão de Débito Visa</Text>
+          
+          {/* LISTA DE CARTÕES VIRTUAIS EXIBINDO O TIPO */}
+          {cartoesVirtuais.map((cartao) => (
+            <View key={cartao.id} style={[styles.cardItem, styles.virtualCardItem]}>
+              <View style={{ flexDirection: 'column' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Ionicons name="phone-portrait-outline" size={20} color={Cores.azulClaro} style={{ marginRight: 8 }} />
+                  <Text style={[styles.subtext, { color: Cores.azulEscuro, fontWeight: '700' }]}>
+                    Virtual {cartao.bandeira}
+                  </Text>
+                </View>
+                <Text style={[styles.subtext, { color: '#555', marginLeft: 28, fontSize: 13 }]}>
+                  {cartao.numero}
+                </Text>
+                {/* Rótulo dinâmico mostrando o tipo selecionado */}
+                <Text style={[styles.tagTipoCartao, { backgroundColor: cartao.tipo === 'Débito' ? '#e8f5e9' : cartao.tipo === 'Crédito' ? '#fff3e0' : '#f3e5f5', color: cartao.tipo === 'Débito' ? '#2e7d32' : cartao.tipo === 'Crédito' ? '#ef6c00' : '#6a1b9a' }]}>
+                  {cartao.tipo}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => handleExcluirCartaoVirtual(cartao.id)}>
+                <Ionicons name="trash-outline" size={18} color="#e53935" />
+              </TouchableOpacity>
+            </View>
+          ))}
+
+          {/* NOVO: Seletor de Tipo de Função para Novo Cartão Virtual */}
+          <Text style={[styles.sectionTitle, { fontSize: 14, marginTop: 20, color: '#666' }]}>Opções para o novo cartão:</Text>
+          <View style={styles.seletorTipoContainer}>
+            {(['Débito', 'Crédito', 'Múltiplo (C+D)'] as const).map((tipo) => (
+              <TouchableOpacity
+                key={tipo}
+                style={[styles.opcaoTipoBotao, tipoCartaoSelecionado === tipo && styles.opcaoTipoBotaoAtivo]}
+                onPress={() => setTipoCartaoSelecionado(tipo)}
+              >
+                <Text style={[styles.opcaoTipoTexto, tipoCartaoSelecionado === tipo && styles.opcaoTipoTextoAtivo]}>
+                  {tipo}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
-          <View style={styles.cardItem}>
-            <Ionicons name="card-outline" size={20} color="#555" style={{ marginRight: 8 }} />
-            <Text style={styles.subtext}>Cartão de Crédito MasterCard</Text>
-          </View>
+
+          <TouchableOpacity 
+            style={styles.btnAddVirtualCard} 
+            onPress={handleAdicionarCartaoVirtual}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="add-circle-outline" size={20} color={Cores.azulClaro} style={{ marginRight: 6 }} />
+            <Text style={styles.btnAddVirtualCardText}>Gerar Cartão Virtual ({tipoCartaoSelecionado})</Text>
+          </TouchableOpacity>
 
           <View style={styles.divider} />
 
@@ -260,15 +308,70 @@ const styles = StyleSheet.create({
   text: { fontWeight: 'bold', fontSize: 16, marginBottom: 8, color: '#555' },
   infoText: { fontWeight: 'normal', color: '#000' },
   sectionTitle: { fontWeight: 'bold', fontSize: 18, marginTop: 10, color: '#333' },
-  cardItem: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },
+  cardItem: { flexDirection: 'row', alignItems: 'center', marginTop: 12 },
   subtext: { fontSize: 14, color: '#666' },
+  virtualCardItem: { 
+    justifyContent: 'space-between', 
+    backgroundColor: '#e3f2fd', 
+    padding: 12, 
+    borderRadius: 8,
+    marginTop: 10,
+    alignItems: 'center'
+  },
+  tagTipoCartao: {
+    alignSelf: 'flex-start',
+    fontSize: 11,
+    fontWeight: 'bold',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginTop: 4,
+    marginLeft: 28
+  },
+  seletorTipoContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 8,
+    gap: 6
+  },
+  opcaoTipoBotao: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 6,
+    paddingVertical: 8,
+    alignItems: 'center',
+    backgroundColor: '#fefefe'
+  },
+  opcaoTipoBotaoAtivo: {
+    borderColor: Cores.azulClaro,
+    backgroundColor: '#e3f2fd'
+  },
+  opcaoTipoTexto: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '600'
+  },
+  opcaoTipoTextoAtivo: {
+    color: Cores.azulEscuro,
+    fontWeight: '700'
+  },
+  btnAddVirtualCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: Cores.azulClaro,
+    borderStyle: 'dashed',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 14,
+    backgroundColor: '#fafafa',
+  },
+  btnAddVirtualCardText: {
+    color: Cores.azulClaro,
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
   divider: { height: 1, backgroundColor: '#e0e0e0', marginVertical: 20 },
-  sheetOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)', justifyContent: 'flex-end' },
-  sheetContent: { backgroundColor: '#FFF', borderRadius: 24, marginHorizontal: 16, marginBottom: 24, paddingHorizontal: 24, paddingTop: 12, paddingBottom: 24, minHeight: 380, elevation: 8 },
-  sheetIndicator: { width: 40, height: 4, backgroundColor: '#e0e0e0', borderRadius: 2, alignSelf: 'center', marginBottom: 20 },
-  sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
-  sheetTitle: { fontSize: 22, fontWeight: 'bold', color: '#111' },
-  sheetOption: { flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f7f7f7' },
-  iconBackground: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#f0f5ff', justifyContent: 'center', alignItems: 'center', marginRight: 16 },
-  sheetOptionText: { flex: 1, fontSize: 16, fontWeight: '500', color: '#333' }
 });

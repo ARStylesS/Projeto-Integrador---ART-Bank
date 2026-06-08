@@ -1,93 +1,169 @@
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { PrismaClient } from '@prisma/client';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 
 const router = Router();
 const prisma = new PrismaClient();
 
-// =======================================================
-// ROTA GET: BUSCA OS DADOS DO PERFIL (CHAMADA PELO FRONT)
-// =======================================================
-router.get('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
+router.use((req, res, next) => {
+  console.log(`[ROTEADOR PERFIL] Método: ${req.method} | Caminho: ${req.path}`);
+  next();
+});
 
-    // 1. Executa uma query SQL pura para trazer TODAS as colunas existentes na tabela física,
-    // ignorando eventuais desatualizações ou omissões do arquivo schema.prisma
-    const dadosRaw: any[] = await prisma.$queryRaw`
-      SELECT * FROM "usuarios" WHERE "id" = ${id} LIMIT 1
-    `;
+const diretorioUploads = path.join(__dirname, '..', '..', 'uploads');
 
-    if (!dadosRaw || dadosRaw.length === 0) {
-      return res.status(404).json({ erro: 'Usuário não encontrado.' });
-    }
+if (!fs.existsSync(diretorioUploads)) {
+  fs.mkdirSync(diretorioUploads, { recursive: true });
+}
 
-    const usuario = dadosRaw[0];
-
-    // 2. Mapeamento explícito dos campos com fallback de segurança
-    return res.status(200).json({
-      id: usuario.id,
-      nome: usuario.nome,
-      email: usuario.email,
-      telefone: usuario.telefone,
-      saldo: Number(usuario.saldo) || 0,
-      // Captura as chaves independente de estarem em maiúsculas ou minúsculas no Postgres
-      agencia: usuario.agencia || usuario.Agencia || '0001', 
-      conta: usuario.conta || usuario.Conta || '--------',
-      fichas: usuario.fichas ?? 0,
-    });
-
-  } catch (error) {
-    console.error('Erro crítico ao buscar perfil via QueryRaw:', error);
-    return res.status(500).json({ erro: 'Erro interno do servidor ao carregar o perfil.' });
+const armazenamento = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, diretorioUploads);
+  },
+  filename: (req, file, cb) => {
+    const id = req.params?.id || 'generico';
+    const extensao = path.extname(file.originalname) || '.jpg';
+    cb(null, `avatar-user-${id}-${Date.now()}${extensao}`);
   }
 });
 
-// =======================================================
-// ROTA PUT: ATUALIZA OS DADOS DO PERFIL
-// =======================================================
-router.put('/:id', async (req, res) => {
+const upload = multer({
+  storage: armazenamento,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const tiposPermitidos = /jpeg|jpg|png|webp/;
+    const mimetypesValidos = tiposPermitidos.test(file.mimetype);
+    const extensaoValida = tiposPermitidos.test(path.extname(file.originalname).toLowerCase());
+
+    if (mimetypesValidos && extensaoValida) {
+      return cb(null, true);
+    }
+    cb(new Error('Formato inválido. Envie apenas imagens em JPEG, JPG, PNG ou WEBP.'));
+  }
+});
+
+const uploadFotoMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  upload.single('foto')(req, res, (err) => {
+    if (err instanceof multer.MulterError) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ erro: 'A imagem é muito grande. O limite máximo é 5MB.' });
+      }
+      return res.status(400).json({ erro: `Erro no upload: ${err.message}` });
+    } else if (err) {
+      return res.status(400).json({ erro: err.message });
+    }
+    next();
+  });
+};
+
+// ROTA PUT: ATUALIZAR DADOS CADASTRAIS DO PERFIL
+router.put('/:id', async (req: Request, res: Response): Promise<any> => {
+  console.log("-> Iniciando execução interna da rota PUT");
   try {
     const { id } = req.params;
-    const { nome, email, telefone } = req.body;
+    const { usuario, nome, email, telefone, celular } = req.body;
+
+    if (!usuario || !nome || !email || !celular) {
+      return res.status(400).json({ erro: 'Os campos Usuário, Nome, E-mail e Celular são obrigatórios.' });
+    }
+
+    const idString = String(id);
 
     const usuarioAtualizado = await prisma.usuario.update({
-      where: { id: String(id) },
+      where: { id: idString },
       data: {
-        nome: nome ? String(nome).trim() : undefined,
-        email: email ? String(email).trim().toLowerCase() : undefined,
-        telefone: telefone ? String(telefone).trim() : undefined,
+        usuario: String(usuario).trim(),
+        nome: String(nome).trim(),
+        email: String(email).trim().toLowerCase(),
+        telefone: telefone ? String(telefone).trim() : '',
+        celular: String(celular).trim()
       }
     });
 
-    return res.status(200).json({ mensagem: 'Perfil updated com sucesso!', usuario: usuarioAtualizado });
-  } catch (error) {
-    console.error('Erro ao atualizar perfil:', error);
-    return res.status(500).json({ erro: 'Erro ao atualizar perfil.' });
+    console.log(`[SUCESSO PUT] Perfil ID ${idString} modificado.`);
+
+    return res.status(200).json({
+      mensagem: 'Perfil atualizado com sucesso!',
+      usuario: usuarioAtualizado
+    });
+
+  } catch (error: any) {
+    console.error('======= ERRO INTERNO NO PUT DO PRISMA =======');
+    console.error(error);
+    console.error('=============================================');
+    
+    if (error.code === 'P2002') {
+      return res.status(400).json({ erro: 'Este e-mail já está sendo utilizado por outro usuário.' });
+    }
+
+    return res.status(500).json({ 
+      erro: 'Erro interno ao salvar as alterações no banco.', 
+      detalhes: error.message 
+    });
   }
 });
 
-router.delete('/:id', async (req, res) => {
+// ROTA GET: RETORNAR DADOS DO PERFIL
+router.get('/:id', async (req: Request, res: Response): Promise<any> => {
   try {
     const { id } = req.params;
 
-    const usuarioExiste = await prisma.usuario.findUnique({
+    const usuario = await prisma.usuario.findUnique({
       where: { id: String(id) }
     });
 
-    if (!usuarioExiste) {
-      return res.status(404).json({ erro: 'Usuário não encontrado.' });
+    if (!usuario) {
+      return res.status(404).json({ erro: 'Usuário não localizado no sistema.' });
     }
 
-    await prisma.usuario.delete({
-      where: { id: String(id) }
+    return res.status(200).json(usuario);
+  } catch (error) {
+    console.error('Erro ao buscar dados do perfil:', error);
+    return res.status(500).json({ erro: 'Erro interno ao carregar perfil.' });
+  }
+});
+
+// ROTA POST: PERSISTE A FOTO NO BANCO DE DADOS
+router.post('/:id/foto', uploadFotoMiddleware, async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { id } = req.params;
+
+    if (!req.file) {
+      return res.status(400).json({ erro: 'Nenhum arquivo enviado.' });
+    }
+
+    const hostCompleto = req.get('host') || 'localhost:3333';
+    const baseHost = process.env.EXPO_PUBLIC_API_URL || `http://${hostCompleto}`;
+    const urlFotoPublica = `${baseHost}/uploads/${req.file.filename}`;
+    const idString = String(id);
+
+    const usuarioAtualizado = await prisma.usuario.update({
+      where: { id: idString },
+      data: { fotoUrl: urlFotoPublica }
     });
 
-    console.log(`[DELETE SUCESSO] Usuário ${id} excluído.`);
-    return res.status(200).json({ mensagem: 'Conta excluída com sucesso.' });
+    return res.status(200).json({
+      mensagem: 'Foto de perfil atualizada com sucesso!',
+      fotoUrl: urlFotoPublica,
+      usuario: usuarioAtualizado
+    });
 
+  } catch (error: any) {
+    console.error('======= ERRO CRÍTICO NO UP DE FOTO =======');
+    return res.status(500).json({ erro: 'Erro ao gravar referência da imagem.' });
+  }
+});
+
+// ROTA DELETE: EXCLUIR CONTA
+router.delete('/:id', async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { id } = req.params;
+    await prisma.usuario.delete({ where: { id: String(id) } });
+    return res.status(200).json({ mensagem: 'Conta removida com sucesso.' });
   } catch (error) {
-    console.error('Erro ao excluir conta:', error);
-    return res.status(500).json({ erro: 'Erro interno ao excluir a conta.' });
+    return res.status(500).json({ erro: 'Não foi possível completar a exclusão.' });
   }
 });
 

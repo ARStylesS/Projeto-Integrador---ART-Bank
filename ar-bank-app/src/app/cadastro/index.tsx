@@ -9,23 +9,70 @@ const API_BASE = process.env.EXPO_PUBLIC_API_URL ??
 
 export default function SignInForm() {
   const router = useRouter();
+  const [nomeUsuarioCadastro, setNomeUsuarioCadastro] = useState('');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [telefone, setTelefone] = useState('');
+  const [celular, setCelular] = useState('');
   const [senha, setSenha] = useState('');
   const [senhaConfirmar, setSenhaConfirmar] = useState('');
 
+  // Função auxiliar para exibir os alertas de forma multiplataforma
+  const exibirAlerta = (titulo: string, mensagem: string) => {
+    if (Platform.OS === 'web') {
+      alert(`${titulo}: ${mensagem}`);
+    } else {
+      Alert.alert(titulo, mensagem);
+    }
+  };
+
   const handleCadastro = async () => {
-    if (!username || !email || !telefone || !senha || !senhaConfirmar) {
-      if (Platform.OS === 'web') alert('Erro: Por favor, preencha todos os campos.');
-      else Alert.alert('Erro', 'Por favor, preencha todos os campos.');
+    // 1. Validação detalhada campo por campo (O telefone NÃO está aqui, tornando-o 100% opcional)
+    if (!nomeUsuarioCadastro.trim()) {
+      exibirAlerta('Erro', 'O campo Nome de usuário é obrigatório.');
+      return;
+    }
+    if (!username.trim()) {
+      exibirAlerta('Erro', 'O campo Nome completo é obrigatório.');
+      return;
+    }
+    if (!email.trim()) {
+      exibirAlerta('Erro', 'O campo E-mail é obrigatório.');
+      return;
+    }
+    if (!celular.trim()) {
+      exibirAlerta('Erro', 'O campo Telefone-celular é obrigatório.');
+      return;
+    }
+    if (!senha) {
+      exibirAlerta('Erro', 'O campo Senha é obrigatório.');
+      return;
+    }
+    if (!senhaConfirmar) {
+      exibirAlerta('Erro', 'O campo Confirme sua senha é obrigatório.');
       return;
     }
 
+    // 2. Validação das Senhas
     if (senha !== senhaConfirmar) {
-      if (Platform.OS === 'web') alert('Erro: As senhas não coincidem.');
-      else Alert.alert('Erro', 'As senhas não coincidem.');
+      exibirAlerta('Erro', 'As senhas não coincidem.');
       return;
+    }
+
+    // 3. Validação do formato do Celular (Obrigatório)
+    const celularNumeros = celular.replace(/\D/g, '');
+    if (celularNumeros.length < 11) {
+      exibirAlerta('Erro no Celular', 'Você deve inserir o DDD (2 dígitos) seguido do número do celular completo (9 dígitos). Exemplo: 11999999999');
+      return;
+    }
+
+    // 4. Validação do formato do Telefone Fixo (Só valida se houver texto digitado)
+    if (telefone && telefone.trim().length > 0) {
+      const telefoneNumeros = telefone.replace(/\D/g, '');
+      if (telefoneNumeros.length < 10) {
+        exibirAlerta('Erro no Telefone Fixo', 'Você deve inserir o DDD (2 dígitos) seguido do número fixo completo (8 dígitos). Exemplo: 1144444444');
+        return;
+      }
     }
 
     try {
@@ -36,9 +83,11 @@ export default function SignInForm() {
           'Accept': 'application/json'
         },
         body: JSON.stringify({ 
+          usuario: nomeUsuarioCadastro,
           nome: username, 
           email: email.trim().toLowerCase(), 
-          telefone, 
+          telefone: telefone ? telefone.replace(/\D/g, '') : '', 
+          celular: celular.replace(/\D/g, ''),   
           senha 
         }),
       });
@@ -46,18 +95,17 @@ export default function SignInForm() {
       const dados = await resposta.json();
 
       if (!resposta.ok) {
-        if (Platform.OS === 'web') alert('Erro: ' + (dados.erro || 'Falha no cadastro'));
-        else Alert.alert('Erro', dados.erro || 'Falha no cadastro');
+        exibirAlerta('Erro', dados.erro || 'Falha no cadastro');
         return;
       }
       
-      // 保存 - Salva os dados gerados pela API no localStorage
       if (dados.usuario) {
-        localStorage.setItem('@ARBank:user', JSON.stringify(dados.usuario));
+        if (Platform.OS === 'web') {
+          localStorage.setItem('@ARBank:user', JSON.stringify(dados.usuario));
+        }
       }
 
-      if (Platform.OS === 'web') alert('Sucesso: Cadastro feito com sucesso!');
-      else Alert.alert('Sucesso', 'Cadastro feito com sucesso!');
+      exibirAlerta('Sucesso', 'Cadastro feito com sucesso!');
       
       router.replace({
         pathname: '/login',
@@ -65,8 +113,7 @@ export default function SignInForm() {
       });
     } catch (error) {
       console.error("Erro detalhado no fetch do cadastro:", error);
-      if (Platform.OS === 'web') alert('Erro: Não foi possível conectar ao servidor.');
-      else Alert.alert('Erro', 'Não foi possível conectar ao servidor.');
+      exibirAlerta('Erro', 'Não foi possível conectar ao servidor.');
     }
   };
 
@@ -81,20 +128,40 @@ export default function SignInForm() {
         <View style={styles.form}>
           <Text style={styles.header}>Insira seus dados</Text>
           
-          <Text style={styles.text}>Seu nome:</Text>
-          <TextInput style={styles.input} value={username} onChangeText={setUsername} />
+          <Text style={styles.text}>Seu nome de usuário</Text>
+          <TextInput style={styles.input} value={nomeUsuarioCadastro} onChangeText={setNomeUsuarioCadastro} placeholder="Nome de usuário"/>
+      
+          <Text style={styles.text}>Seu nome completo</Text>
+          <TextInput style={styles.input} value={username} onChangeText={setUsername} placeholder="Nome completo"/>
           
-          <Text style={styles.text}>Seu e-mail:</Text>
-          <TextInput style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+          <Text style={styles.text}>Seu e-mail</Text>
+          <TextInput style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholder = "usuario@gmail.com"/>
           
-          <Text style={styles.text}>Seu telefone:</Text>
-          <TextInput style={styles.input} value={telefone} onChangeText={setTelefone} keyboardType="phone-pad" />
+          <Text style={styles.text}>Seu telefone-fixo (Opcional):</Text>
+          <TextInput 
+            style={styles.input} 
+            value={telefone} 
+            onChangeText={setTelefone} 
+            keyboardType="phone-pad" 
+            maxLength={14} 
+            placeholder="DDD + Número (ex: 1144444444)" 
+          />
+
+          <Text style={styles.text}>Seu telefone-celular</Text>
+          <TextInput 
+            style={styles.input} 
+            value={celular} 
+            onChangeText={setCelular} 
+            keyboardType="phone-pad" 
+            maxLength={15}
+            placeholder="DDD + Número (ex: 11999999999)" 
+          />
           
-          <Text style={styles.text}>Sua senha:</Text>
-          <TextInput style={styles.input} secureTextEntry={true} value={senha} onChangeText={setSenha} />
+          <Text style={styles.text}>Sua senha</Text>
+          <TextInput style={styles.input} secureTextEntry={true} value={senha} onChangeText={setSenha} placeholder="Digite a senha"/>
           
-          <Text style={styles.text}>Confirme sua senha:</Text>
-          <TextInput style={styles.input} secureTextEntry={true} value={senhaConfirmar} onChangeText={setSenhaConfirmar} />
+          <Text style={styles.text}>Confirme sua senha</Text>
+          <TextInput style={styles.input} secureTextEntry={true} value={senhaConfirmar} onChangeText={setSenhaConfirmar} placeholder="Digite a senha novamente"/>
 
           <StdButton title="Cadastrar" onPress={handleCadastro} />
           <StdButton title="Cancelar" onPress={gotoLoginFailed} backgroundColor={Cores.branco} textColor={Cores.azulEscuro} />

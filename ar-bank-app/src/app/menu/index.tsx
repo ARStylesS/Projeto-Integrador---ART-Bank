@@ -27,6 +27,7 @@ export default function Menu() {
 
   const [visivel, setVisivel] = useState(false);
   const [nomeUsuario, setNomeUsuario] = useState('');
+  const [saudacao, setSaudacao] = useState('Bem-vindo'); // Estado dinâmico puxado do backend
   const [saldo, setSaldo] = useState('R$ 0,00');
 
   useFocusEffect(
@@ -36,8 +37,11 @@ export default function Menu() {
           const resposta = await fetch(`${API_URL}/perfil/${usuarioId}`);
           const dados = await resposta.json();
           if (resposta.ok) {
-            setNomeUsuario(dados.nome);
+            setNomeUsuario(dados.usuario || dados.nome || "Usuário");
             setSaldo(`R$ ${Number(dados.saldo).toFixed(2)}`);
+            
+            // Define de forma limpa o valor tratado pelo seu Servidor Node
+            setSaudacao(dados.saudacao || 'Bem-vindo');
           }
         } catch (error) {
           console.error("Erro ao sincronizar dados no menu:", error);
@@ -49,21 +53,22 @@ export default function Menu() {
   );
 
   const gotoTransf = () => {
-  router.push({
-    pathname: '/transfer',
-    params: {
-      usuario: JSON.stringify({
-        id: usuarioId,
-        nome: nomeUsuario,
-        saldo: saldo
-      })
-    },
-  });
-};
+    router.push({
+      pathname: '/transfer',
+      params: {
+        usuario: JSON.stringify({
+          id: usuarioId,
+          nome: nomeUsuario,
+          saldo: saldo
+        })
+      },
+    });
+  };
 
   return (
     <View style={styles.container}>
-      <AppBar title={`Bem-vindo, ${nomeUsuario || "Usuário"}!`} usuarioId={usuarioId}/>
+      {/* Exibe dinamicamente Bem-vindo ou Bem-vinda */}
+      <AppBar title={`${saudacao}, ${nomeUsuario || "Usuário"}!`} usuarioId={usuarioId}/>
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <TouchableOpacity style={styles.cardSaldo} onPress={() => setVisivel(!visivel)} activeOpacity={0.8}>
@@ -93,7 +98,6 @@ export default function Menu() {
         />
       </ScrollView>
 
-      {/* Certifique-se de que o componente FloatingOptions consiga usar esse ID internamente para abrir a rota /gerenciarPerfil */}
       <FloatingOptions usuarioId={usuarioId} />
     </View>
   );

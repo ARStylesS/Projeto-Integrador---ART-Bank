@@ -18,15 +18,12 @@ type SimulacaoData = {
   montanteFinal: number;
 };
 
-// ─── Cálculo Tabela Price ───────────────────────────────────────────────────
 function calcularTaxaMensal(parcelas: number): number {
-  // 3% base + 1% a cada 12 meses
   const acrescimo = Math.floor(parcelas / 12);
   return (3 + acrescimo) / 100;
 }
 
 function calcularParcela(valor: number, taxaMensal: number, parcelas: number): number {
-  // Fórmula Tabela Price: P = V * [i(1+i)^n] / [(1+i)^n - 1]
   const i = taxaMensal;
   const n = parcelas;
   const fator = Math.pow(1 + i, n);
@@ -59,7 +56,6 @@ export default function Emprestimo() {
     else Alert.alert('Erro', msg);
   };
 
-  // ETAPA 1 → 2: valida campos, senha e gera simulação
   const handleSimular = async () => {
     const valorNumerico = parseFloat(valor.replace(',', '.'));
     const parcelasNumericas = parseInt(parcelas);
@@ -111,7 +107,6 @@ export default function Emprestimo() {
     }
   };
 
-  // ETAPA 2 → 3: confirma e libera o crédito
   const handleConfirmar = async () => {
     if (!simulacao) return;
     setCarregando(true);
@@ -146,7 +141,6 @@ export default function Emprestimo() {
     }
   };
 
-  // ─── ETAPA 1: Formulário ────────────────────────────────────────────────
   if (etapa === 'formulario') {
     return (
       <View style={styles.container}>
@@ -206,7 +200,6 @@ export default function Emprestimo() {
     );
   }
 
-  // ─── ETAPA 2: Simulação ─────────────────────────────────────────────────
   if (etapa === 'simulacao' && simulacao) {
     return (
       <View style={styles.container}>
@@ -251,7 +244,6 @@ export default function Emprestimo() {
     );
   }
 
-  // ─── ETAPA 3: Concluída ─────────────────────────────────────────────────
   return (
     <View style={styles.containerConcluida}>
       <AppBar title="Empréstimo Pessoal" usuarioId={usuarioId} />
@@ -274,75 +266,16 @@ export default function Emprestimo() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    width: '100%',
-    backgroundColor: Cores.azulFundo,
-  },
-  scrollContent: {
-    paddingBottom: 40,
-    width: '100%',
-    alignItems: 'center',
-    paddingVertical: 20,
-    flexGrow: 1,
-  },
-  form: {
-    padding: 24,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    width: '80%',
-  },
-  header: {
-    fontWeight: 'bold',
-    fontSize: 24,
-    marginBottom: 32,
-    color: '#333',
-  },
-  label: {
-    fontWeight: 'bold',
-    fontSize: 16,
-    marginBottom: 4,
-    color: '#555',
-  },
-  input: {
-    width: '100%',
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
-    marginBottom: 32,
-    padding: 8,
-    fontSize: 16,
-  },
-  infoTaxa: {
-    fontSize: 13,
-    color: '#888',
-    marginBottom: 24,
-    fontStyle: 'italic',
-  },
-  info: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: Cores.azulEscuro,
-    marginBottom: 24,
-  },
-  containerConcluida: {
-    flex: 1,
-    backgroundColor: Cores.azulFundo,
-  },
-  cardConcluida: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  iconeSucesso: {
-    fontSize: 64,
-    color: Cores.verde,
-    marginBottom: 16,
-  },
-  subTexto: {
-    fontSize: 16,
-    color: '#555',
-    textAlign: 'center',
-    marginBottom: 32,
-  },
+  container: { flex: 1, width: '100%', backgroundColor: Cores.azulFundo },
+  scrollContent: { paddingBottom: 40, width: '100%', alignItems: 'center', paddingVertical: 20, flexGrow: 1 },
+  form: { padding: 24, backgroundColor: '#FFFFFF', borderRadius: 12, width: '80%' },
+  header: { fontWeight: 'bold', fontSize: 24, marginBottom: 32, color: '#333' },
+  label: { fontWeight: 'bold', fontSize: 16, marginBottom: 4, color: '#555' },
+  input: { width: '100%', borderBottomWidth: 1, borderBottomColor: '#ccc', marginBottom: 32, padding: 8, fontSize: 16 },
+  infoTaxa: { fontSize: 13, color: '#888', marginBottom: 24, fontStyle: 'italic' },
+  info: { fontSize: 22, fontWeight: 'bold', color: Cores.azulEscuro, marginBottom: 24 },
+  containerConcluida: { flex: 1, backgroundColor: Cores.azulFundo },
+  cardConcluida: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
+  iconeSucesso: { fontSize: 64, color: Cores.verde, marginBottom: 16 },
+  subTexto: { fontSize: 16, color: '#555', textAlign: 'center', marginBottom: 32 },
 });

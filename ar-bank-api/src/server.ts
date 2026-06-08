@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'path'; 
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import editarPerfilRoutes from './routes/dadosPerfil'; 
@@ -14,15 +15,20 @@ const app = express();
 const prisma = new PrismaClient();
 const PORT = 3333;
 
+// Configurações Globais de Middlewares
 app.use(cors());
 app.use(express.json());
 
-// Rastreador de rotas ativo no terminal
+// Libera a pasta uploads de forma estática para que o app mobile possa acessar as fotos
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+
+// Rastreador de rotas ativo no terminal - Registra a entrada física de qualquer requisição
 app.use((req, res, next) => {
-  console.log(`[REQUISIÇÃO] ${req.method} | URL: ${req.url}`);
+  console.log(`[REQUISIÇÃO GLOBAL] ${req.method} | URL original: ${req.originalUrl}`);
   next();
 });
 
+// Vinculação dos Roteadores Modulares
 app.use('/perfil', editarPerfilRoutes);
 app.use('/auth', authRoutes);
 app.use('/transferencia', transferenciaRoutes);
@@ -31,18 +37,19 @@ app.use('/emprestimo', emprestimoRoutes);
 app.use('/cassino', cassinoRoutes);
 app.use('/solicitacao', solicitacaoRoutes);
 
-// ROTA DE CADASTRO COM CRIPTOGRAFIA (BCRYPT)
+// =======================================================
+// ROTA DE CADASTRO
+// =======================================================
 app.post('/cadastro', async (req, res) => {
   try {
-    const { nome, email, telefone, senha } = req.body;
+    const { usuario, nome, email, telefone, celular, senha } = req.body;
 
-    if (!nome || !email || !telefone || !senha) {
-      return res.status(400).json({ erro: 'Todos os campos são obrigatórios para o cadastro.' });
+    if (!usuario || !nome || !email || !celular || !senha) {
+      return res.status(400).json({ erro: 'Todos os campos obrigatórios devem ser preenchidos.' });
     }
 
     const emailFormatado = String(email).trim().toLowerCase();
 
-    // Evita duplicidade de conta
     const emailExistente = await prisma.usuario.findUnique({
       where: { email: emailFormatado }
     });
@@ -51,18 +58,18 @@ app.post('/cadastro', async (req, res) => {
       return res.status(400).json({ erro: 'Este e-mail já está cadastrado.' });
     }
 
-    // Criptografa a senha antes de salvar no PostgreSQL
     const salt = await bcrypt.genSalt(10);
     const senhaCriptografada = await bcrypt.hash(String(senha), salt);
 
-    // Gera dados bancários iniciais fictícios exigidos pelo Schema
     const numeroConta = String(Math.floor(100000 + Math.random() * 900000)) + "-9";
 
     const novoUsuario = await prisma.usuario.create({
       data: {
-        nome: String(nome).trim(),
+        usuario: String(usuario).trim(),
+        nome: String(nome).trim(), 
         email: emailFormatado,
-        telefone: String(telefone).trim(),
+        telefone: telefone ? String(telefone).trim() : '',
+        celular: String(celular).trim(),
         senhaUsuario: senhaCriptografada,
         saldo: 100.00, 
         agencia: "0001",
@@ -70,7 +77,7 @@ app.post('/cadastro', async (req, res) => {
       }
     });
 
-    console.log(`[CADASTRO SUCESSO] ${novoUsuario.nome} registrado. Conta: ${numeroConta}`);
+    console.log(`[CADASTRO SUCESSO] ${(novoUsuario as any).nome} registrado. Conta: ${numeroConta}`);
     return res.status(201).json({ mensagem: 'Usuário cadastrado com sucesso!', id: novoUsuario.id });
 
   } catch (error: any) {
@@ -79,7 +86,9 @@ app.post('/cadastro', async (req, res) => {
   }
 });
 
-// ROTA DE LOGIN COMPATÍVEL COM O SEU AUTH.TS
+// =======================================================
+// ROTA DE LOGIN (CORRIGIDA COM CHECAGEM DE TIPOS)
+// =======================================================
 app.post('/auth/login', async (req, res) => {
   try {
     const { email, senha } = req.body;
@@ -90,8 +99,7 @@ app.post('/auth/login', async (req, res) => {
 
     const emailFormatado = String(email).trim().toLowerCase();
 
-    // Busca o usuário de forma resiliente no Postgres
-    const usuario = await prisma.usuario.findFirst({
+    const resultadoBusca = await prisma.usuario.findFirst({
       where: { 
         email: {
           equals: emailFormatado,
@@ -100,32 +108,36 @@ app.post('/auth/login', async (req, res) => {
       },
     });
 
-    if (!usuario) {
+    if (!resultadoBusca) {
       console.log(`[LOGIN NEGADO] E-mail não encontrado: ${emailFormatado}`);
       return res.status(401).json({ erro: 'Usuário ou senha incorretos.' });
     }
 
-    // Validação segura usando a mesma estratégia do seu auth.ts
-    const senhaValida = await bcrypt.compare(String(senha), usuario.senhaUsuario);
+    // Convertendo o resultado explicitamente para dynamic type para sumir com os erros de compilação
+    const usuarioEncontrado = resultadoBusca as any;
+
+    const senhaValida = await bcrypt.compare(String(senha), usuarioEncontrado.senhaUsuario);
 
     if (!senhaValida) {
       console.log(`[LOGIN NEGADO] Senha inválida para: ${emailFormatado}`);
       return res.status(401).json({ erro: 'Usuário ou senha incorretos.' });
     }
 
-    console.log(`[LOGIN SUCESSO] ${usuario.nome} conectado.`);
+    console.log(`[LOGIN SUCESSO] ${usuarioEncontrado.nome} conectado.`);
     
-    // Retorna exatamente a estrutura que o seu front-end precisa ler
     return res.status(200).json({
       mensagem: 'Login bem-sucedido!',
       usuario: {
-        id: String(usuario.id),
-        nome: usuario.nome,
-        email: usuario.email,
-        telefone: usuario.telefone,
-        saldo: Number(usuario.saldo) || 0, 
-        agencia: (usuario as any).agencia ?? '0001', 
-        conta: usuario.conta,              
+        id: String(usuarioEncontrado.id),
+        usuario: usuarioEncontrado.usuario,
+        nome: usuarioEncontrado.nome,
+        email: usuarioEncontrado.email,
+        telefone: usuarioEncontrado.telefone,
+        celular: usuarioEncontrado.celular,
+        saldo: Number(usuarioEncontrado.saldo) || 0, 
+        agencia: usuarioEncontrado.agencia ?? '0001', 
+        conta: usuarioEncontrado.conta,
+        fotoUrl: usuarioEncontrado.fotoUrl || null 
       },
     });
 

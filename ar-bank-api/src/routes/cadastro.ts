@@ -1,78 +1,69 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt'; // Ou a biblioteca de criptografia que você usa
 
 const router = Router();
 const prisma = new PrismaClient();
 
-router.post('/', async (req: Request, res: Response) => {
+router.post('/cadastro', async (req: Request, res: Response) => {
   try {
-    const { nome, email, telefone, senha } = req.body;
+    const { usuario, nome, email, celular, senha, telefone } = req.body;
 
-    // 1. Validações básicas de entrada
-    if (!nome || !email || !telefone || !senha) {
-      return res.status(400).json({ erro: 'Todos os campos são obrigatórios.' });
+    // 1. Validação de campos obrigatórios (TELEFONE DE FORA DAQUI)
+    if (!usuario || !nome || !email || !celular || !senha) {
+      return res.status(400).json({ erro: 'Por favor, preencha todos os campos obrigatórios.' });
     }
 
-    // 2. Verifica se o e-mail já existe no banco de dados
-    const usuarioExiste = await prisma.usuario.findUnique({
-      where: { email: email.toLowerCase() }
+    // 2. Verifica se o e-mail ou o nome de usuário já existem no banco
+    const usuarioExistente = await prisma.usuario.findFirst({
+      where: {
+        OR: [
+          { email: email.trim().toLowerCase() },
+          { usuario: usuario.trim() }
+        ]
+      }
     });
 
-    if (usuarioExiste) {
-      return res.status(400).json({ erro: 'Este e-mail já está cadastrado.' });
+    if (usuarioExistente) {
+      return res.status(400).json({ erro: 'Nome de usuário ou e-mail já cadastrado.' });
     }
 
-    // 3. Criptografia da senha do usuário
-    const salt = await bcrypt.genSalt(10);
-    const senhaHash = await bcrypt.hash(senha, salt);
+    // 3. Criptografia da senha
+    const senhaCriptografada = await bcrypt.hash(senha, 10);
 
-    // 4. Fluxo de geração de Conta Bancária Única
-    let contaGerada = '';
-    let contaJaExiste = true;
-
-    while (contaJaExiste) {
-      const numeroSeisDigitos = Math.floor(100000 + Math.random() * 900000); // Ex: 482915
-      const digitoVerificador = Math.floor(Math.random() * 10); // Ex: 3
-      contaGerada = `${numeroSeisDigitos}-${digitoVerificador}`; // Resultado: "482915-3"
-
-      // O uso do "as any" força o compilador a ignorar a trava de tipo do Prisma cacheado
-      const checarConta = await prisma.usuario.findUnique({
-        where: { conta: contaGerada } as any
-      });
-
-      if (!checarConta) {
-        contaJaExiste = false; // Conta livre encontrada
-      }
+    // 4. Gerador simples de número de conta único (Exemplo: 6 dígitos aleatórios)
+    let numeroConta = '';
+    let contaExiste = true;
+    while (contaExiste) {
+      numeroConta = Math.floor(100000 + Math.random() * 900000).toString();
+      const checarConta = await prisma.usuario.findUnique({ where: { conta: numeroConta } });
+      if (!checarConta) contaExiste = false;
     }
 
+    // 5. Criação do usuário no banco de dados com Prisma
     const novoUsuario = await prisma.usuario.create({
       data: {
-        nome,
-        email: email.toLowerCase(),
-        telefone,
-        senhaUsuario: senhaHash,
-        saldo: 100.00,
-        agencia: '0001',
-        conta: contaGerada
+        usuario: usuario.trim(),
+        nome: nome.trim(),
+        email: email.trim().toLowerCase(),
+        celular: celular.replace(/\D/g, ''), // Mantém apenas números
+        senhaUsuario: senhaCriptografada,
+        saldo: 0.00,
+        agencia: "0001",
+        conta: numeroConta,
+        fichas: 0,
+        // SE O TELEFONE VIER VAZIO OU EM BRANCO, SALVA COMO NULL
+        telefone: telefone && telefone.trim() !== '' ? telefone.replace(/\D/g, '') : null
       }
     });
 
-    return res.status(201).json({
-      mensagem: 'Cadastro realizado com sucesso!',
-      usuario: {
-        id: novoUsuario.id,
-        nome: novoUsuario.nome,
-        email: novoUsuario.email,
-        agencia: novoUsuario.agencia ?? '0001',
-        conta: novoUsuario.conta,
-        saldo: Number(novoUsuario.saldo)
-      }
-    });
+    // Retorna o usuário criado com sucesso (removendo a senha por segurança)
+    const { senhaUsuario, ...usuarioSemSenha } = novoUsuario;
+    return res.status(201).json({ usuario: usuarioSemSenha });
 
   } catch (error) {
-    console.error('Erro interno detectado no fluxo de cadastro:', error);
-    return res.status(500).json({ erro: 'Erro interno no servidor ao realizar cadastro.' });
+    console.error('Erro no servidor ao cadastrar:', error);
+    return res.status(500).json({ erro: 'Erro interno no servidor ao realizar o cadastro.' });
   }
 });
 

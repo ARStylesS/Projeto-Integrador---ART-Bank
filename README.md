@@ -4,6 +4,9 @@ Esse projeto é um aplicativo mobile de transferências bancárias simuladas.
 Nesse app, o usuário do banco fictício AR Bank pode fazer as seguintes operações em sua conta bancária:
 
 ---
+ para alterar foto do perfil tem que usar pacote de imagens no expo na pasta do front ar-bank-app:
+npx expo install expo-image-picker
+npm install multer && npm install -D @types/multer precisa intalar esta biblioteca o ar-bank-api
 
 Funcionalidades principais do projeto:
 1. Consultar saldo
@@ -46,7 +49,6 @@ Para consultar o banco de dados, abra um terceiro terminal e insira:
 cd ar-bank-api
 npx prisma studio
 ```
-
 O último deve ser inserido toda vez para iniciar o servidor expo da aplicação.
 
 Dashboard do Projeto feito no Figma:
