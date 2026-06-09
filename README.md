@@ -17,10 +17,11 @@ Funcionalidades principais do projeto:
 ---
 
 Funcionalidades secundárias do projeto:
-1. Gerenciar conta de usuário
-2. Consultar extrato bancário
-3. Realizar empréstimo (inclui parcelamento e juros)
-4. Sistema de lotérica virtual com jogos simulados
+1. Gerenciar conta de usuário, com edição de dados
+2. Inclusão de foto de perfil
+3. Consultar extrato bancário
+4. Realizar empréstimo (inclui parcelamento e juros)
+5. Sistema de cassino virtual com jogos simulados
 
 ---
 
