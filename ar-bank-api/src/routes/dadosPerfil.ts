@@ -58,7 +58,9 @@ const uploadFotoMiddleware = (req: Request, res: Response, next: NextFunction) =
   });
 };
 
+// =======================================================
 // ROTA PUT: ATUALIZAR DADOS CADASTRAIS DO PERFIL
+// =======================================================
 router.put('/:id', async (req: Request, res: Response): Promise<any> => {
   console.log("-> Iniciando execução interna da rota PUT");
   try {
@@ -85,7 +87,7 @@ router.put('/:id', async (req: Request, res: Response): Promise<any> => {
     console.log(`[SUCESSO PUT] Perfil ID ${idString} modificado.`);
 
     return res.status(200).json({
-      mensagem: 'Perfil atualizado com sucesso!',
+      mensagem: 'Perfil updated com sucesso!',
       usuario: usuarioAtualizado
     });
 
@@ -105,7 +107,9 @@ router.put('/:id', async (req: Request, res: Response): Promise<any> => {
   }
 });
 
-// ROTA GET: RETORNAR DADOS DO PERFIL
+// =======================================================
+// ROTA GET: RETORNAR DADOS COM TRATAMENTO DE GÊNERO (SAUDAÇÃO)
+// =======================================================
 router.get('/:id', async (req: Request, res: Response): Promise<any> => {
   try {
     const { id } = req.params;
@@ -118,14 +122,41 @@ router.get('/:id', async (req: Request, res: Response): Promise<any> => {
       return res.status(404).json({ erro: 'Usuário não localizado no sistema.' });
     }
 
-    return res.status(200).json(usuario);
+    // 🔍 LOGS DE MONITORAMENTO: Monitora no terminal o valor bruto que está vindo da coluna "genero"
+    console.log(`\n--- [MONITORAMENTO GÊNERO] ---`);
+    console.log(`Usuário ID buscado: ${id}`);
+    console.log(`Nome no Banco: ${usuario.nome}`);
+    console.log(`Gênero registrado no Banco: "${usuario.genero}"`);
+
+    let saudacaoTexto = 'Bem-vindo';
+
+    if (usuario.genero) {
+      const g = String(usuario.genero).toUpperCase().trim();
+      
+      // Validações aceitas: caractere único "F", palavra completa ou prefixo
+      if (g === 'F' || g === 'FEMININO' || g === 'MULHER' || g.startsWith('FEM')) {
+        saudacaoTexto = 'Bem-vinda';
+      }
+    }
+
+    console.log(`Saudação definida pela API: "${saudacaoTexto}"`);
+    console.log(`--------------------------------\n`);
+
+    // Injeta a propriedade "saudacao" para o front-end ler sem quebrar a estrutura original
+    return res.status(200).json({
+      ...usuario,
+      saudacao: saudacaoTexto
+    });
+
   } catch (error) {
     console.error('Erro ao buscar dados do perfil:', error);
     return res.status(500).json({ erro: 'Erro interno ao carregar perfil.' });
   }
 });
 
+// =======================================================
 // ROTA POST: PERSISTE A FOTO NO BANCO DE DADOS
+// =======================================================
 router.post('/:id/foto', uploadFotoMiddleware, async (req: Request, res: Response): Promise<any> => {
   try {
     const { id } = req.params;
@@ -145,7 +176,7 @@ router.post('/:id/foto', uploadFotoMiddleware, async (req: Request, res: Respons
     });
 
     return res.status(200).json({
-      mensagem: 'Foto de perfil atualizada com sucesso!',
+      mensagem: 'Foto de perfil updated com sucesso!',
       fotoUrl: urlFotoPublica,
       usuario: usuarioAtualizado
     });
@@ -156,7 +187,9 @@ router.post('/:id/foto', uploadFotoMiddleware, async (req: Request, res: Respons
   }
 });
 
+// =======================================================
 // ROTA DELETE: EXCLUIR CONTA
+// =======================================================
 router.delete('/:id', async (req: Request, res: Response): Promise<any> => {
   try {
     const { id } = req.params;

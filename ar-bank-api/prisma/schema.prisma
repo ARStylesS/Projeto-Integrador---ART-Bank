@@ -26,8 +26,24 @@ model Usuario {
   transferenciasEnviadas  Transferencia[] @relation("Remetente")
   solicitacoes            Solicitacao[]
   emprestimos             Emprestimo[] 
+  
+  cartoes                 Cartao[]
 
   @@map("usuarios")
+}
+
+model Cartao {
+  id        String   @id @default(uuid())
+  numero    String
+  bandeira  String
+  tipo      String   // 'Débito' | 'Crédito' | 'Débito / Crédito'
+  usuarioId String
+  criadoEm  DateTime @default(now())
+
+  // Configura o CASCADE para excluir os cartões automaticamente se o usuário deletar a conta
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@map("cartoes")
 }
 
 model Transferencia {

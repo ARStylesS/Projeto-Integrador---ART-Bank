@@ -1,20 +1,20 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcrypt'; // Ou a biblioteca de criptografia que você usa
+import bcrypt from 'bcrypt'; 
 
 const router = Router();
 const prisma = new PrismaClient();
 
 router.post('/cadastro', async (req: Request, res: Response) => {
   try {
-    const { usuario, nome, email, celular, senha, telefone } = req.body;
+    const { usuario, nome, email, celular, senha, telefone, genero } = req.body;
 
-    // 1. Validação de campos obrigatórios (TELEFONE DE FORA DAQUI)
+
     if (!usuario || !nome || !email || !celular || !senha) {
       return res.status(400).json({ erro: 'Por favor, preencha todos os campos obrigatórios.' });
     }
 
-    // 2. Verifica se o e-mail ou o nome de usuário já existem no banco
+    
     const usuarioExistente = await prisma.usuario.findFirst({
       where: {
         OR: [
@@ -28,10 +28,10 @@ router.post('/cadastro', async (req: Request, res: Response) => {
       return res.status(400).json({ erro: 'Nome de usuário ou e-mail já cadastrado.' });
     }
 
-    // 3. Criptografia da senha
+
     const senhaCriptografada = await bcrypt.hash(senha, 10);
 
-    // 4. Gerador simples de número de conta único (Exemplo: 6 dígitos aleatórios)
+  
     let numeroConta = '';
     let contaExiste = true;
     while (contaExiste) {
@@ -40,24 +40,27 @@ router.post('/cadastro', async (req: Request, res: Response) => {
       if (!checarConta) contaExiste = false;
     }
 
-    // 5. Criação do usuário no banco de dados com Prisma
+    
     const novoUsuario = await prisma.usuario.create({
       data: {
         usuario: usuario.trim(),
         nome: nome.trim(),
         email: email.trim().toLowerCase(),
-        celular: celular.replace(/\D/g, ''), // Mantém apenas números
+        celular: celular.replace(/\D/g, ''), 
         senhaUsuario: senhaCriptografada,
         saldo: 0.00,
         agencia: "0001",
         conta: numeroConta,
         fichas: 0,
-        // SE O TELEFONE VIER VAZIO OU EM BRANCO, SALVA COMO NULL
+        // MODIFICAÇÃO: Se o gênero for enviado, salva o valor (F ou M). Caso contrário, assume "M"
+        genero: genero ? String(genero).trim().toUpperCase() : "M",
         telefone: telefone && telefone.trim() !== '' ? telefone.replace(/\D/g, '') : null
       }
     });
 
-    // Retorna o usuário criado com sucesso (removendo a senha por segurança)
+    console.log(`[API CADASTRO] Novo usuário criado: ${novoUsuario.nome} | Gênero salvo: ${novoUsuario.genero}`);
+
+    
     const { senhaUsuario, ...usuarioSemSenha } = novoUsuario;
     return res.status(201).json({ usuario: usuarioSemSenha });
 

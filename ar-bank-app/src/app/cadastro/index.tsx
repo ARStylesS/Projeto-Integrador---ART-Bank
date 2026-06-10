@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Image, Text, TextInput, StyleSheet, Alert, ScrollView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Picker } from '@react-native-picker/picker'; 
 import { StdButton } from '@/components/StdButton';
 import { Cores } from '../../styles/global';
 
@@ -11,13 +12,29 @@ export default function SignInForm() {
   const router = useRouter();
   const [nomeUsuarioCadastro, setNomeUsuarioCadastro] = useState('');
   const [username, setUsername] = useState('');
+  const [usergenero, setUsergenero] = useState('M'); 
   const [email, setEmail] = useState('');
   const [telefone, setTelefone] = useState('');
   const [celular, setCelular] = useState('');
   const [senha, setSenha] = useState('');
   const [senhaConfirmar, setSenhaConfirmar] = useState('');
 
-  // Função auxiliar para exibir os alertas de forma multiplataforma
+  
+  const formatarCelular = (text: string) => {
+    const nums = text.replace(/\D/g, ''); 
+    if (nums.length <= 2) return nums;
+    if (nums.length <= 7) return `(${nums.substring(0, 2)}) ${nums.substring(2)}`;
+    return `(${nums.substring(0, 2)}) ${nums.substring(2, 7)}-${nums.substring(7, 11)}`;
+  };
+
+  
+  const formatarTelefoneFixo = (text: string) => {
+    const nums = text.replace(/\D/g, ''); 
+    if (nums.length <= 2) return nums;
+    if (nums.length <= 6) return `(${nums.substring(0, 2)}) ${nums.substring(2)}`;
+    return `(${nums.substring(0, 2)}) ${nums.substring(2, 6)}-${nums.substring(6, 10)}`;
+  };
+
   const exibirAlerta = (titulo: string, mensagem: string) => {
     if (Platform.OS === 'web') {
       alert(`${titulo}: ${mensagem}`);
@@ -27,13 +44,16 @@ export default function SignInForm() {
   };
 
   const handleCadastro = async () => {
-    // 1. Validação detalhada campo por campo (O telefone NÃO está aqui, tornando-o 100% opcional)
     if (!nomeUsuarioCadastro.trim()) {
       exibirAlerta('Erro', 'O campo Nome de usuário é obrigatório.');
       return;
     }
     if (!username.trim()) {
       exibirAlerta('Erro', 'O campo Nome completo é obrigatório.');
+      return;
+    }
+    if (!usergenero.trim()) {
+      exibirAlerta('Erro', 'O campo gênero é obrigatório.');
       return;
     }
     if (!email.trim()) {
@@ -53,24 +73,22 @@ export default function SignInForm() {
       return;
     }
 
-    // 2. Validação das Senhas
     if (senha !== senhaConfirmar) {
       exibirAlerta('Erro', 'As senhas não coincidem.');
       return;
     }
 
-    // 3. Validação do formato do Celular (Obrigatório)
+    // Validação considerando os números limpos de máscara
     const celularNumeros = celular.replace(/\D/g, '');
     if (celularNumeros.length < 11) {
-      exibirAlerta('Erro no Celular', 'Você deve inserir o DDD (2 dígitos) seguido do número do celular completo (9 dígitos). Exemplo: 11999999999');
+      exibirAlerta('Erro no Celular', 'Você deve inserir o DDD seguido do número do celular completo (9 dígitos).');
       return;
     }
 
-    // 4. Validação do formato do Telefone Fixo (Só valida se houver texto digitado)
     if (telefone && telefone.trim().length > 0) {
       const telefoneNumeros = telefone.replace(/\D/g, '');
       if (telefoneNumeros.length < 10) {
-        exibirAlerta('Erro no Telefone Fixo', 'Você deve inserir o DDD (2 dígitos) seguido do número fixo completo (8 dígitos). Exemplo: 1144444444');
+        exibirAlerta('Erro no Telefone Fixo', 'Você deve inserir o DDD seguido do número fixo completo (8 dígitos).');
         return;
       }
     }
@@ -85,7 +103,9 @@ export default function SignInForm() {
         body: JSON.stringify({ 
           usuario: nomeUsuarioCadastro,
           nome: username, 
+          genero: usergenero.toUpperCase().trim(), 
           email: email.trim().toLowerCase(), 
+          // 💡 Enviando apenas números limpos para a API
           telefone: telefone ? telefone.replace(/\D/g, '') : '', 
           celular: celular.replace(/\D/g, ''),   
           senha 
@@ -133,6 +153,20 @@ export default function SignInForm() {
       
           <Text style={styles.text}>Seu nome completo</Text>
           <TextInput style={styles.input} value={username} onChangeText={setUsername} placeholder="Nome completo"/>
+
+          <Text style={styles.text}>Seu gênero</Text>
+          <View style={styles.pickerContainer}>
+            <Picker
+              selectedValue={usergenero}
+              onValueChange={(itemValue) => setUsergenero(itemValue)}
+              dropdownIconColor="#333"
+              mode="dropdown"
+              style={styles.pickerBruto}
+            >
+              <Picker.Item label="Masculino" value="M" />
+              <Picker.Item label="Feminino" value="F" />
+            </Picker>
+          </View>
           
           <Text style={styles.text}>Seu e-mail</Text>
           <TextInput style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholder = "usuario@gmail.com"/>
@@ -141,20 +175,22 @@ export default function SignInForm() {
           <TextInput 
             style={styles.input} 
             value={telefone} 
-            onChangeText={setTelefone} 
+            // 💡 Aplica a máscara de telefone fixo na mudança de texto
+            onChangeText={(t) => setTelefone(formatarTelefoneFixo(t))} 
             keyboardType="phone-pad" 
-            maxLength={14} 
-            placeholder="DDD + Número (ex: 1144444444)" 
+            maxLength={14} // Tamanho máximo com a máscara: (XX) XXXX-XXXX
+            placeholder="(11) 4444-4444" 
           />
 
           <Text style={styles.text}>Seu telefone-celular</Text>
           <TextInput 
             style={styles.input} 
             value={celular} 
-            onChangeText={setCelular} 
+            // 💡 Aplica a máscara de celular na mudança de texto
+            onChangeText={(t) => setCelular(formatarCelular(t))} 
             keyboardType="phone-pad" 
-            maxLength={15}
-            placeholder="DDD + Número (ex: 11999999999)" 
+            maxLength={15} // Tamanho máximo com a máscara: (XX) XXXXX-XXXX
+            placeholder="(11) 99999-9999" 
           />
           
           <Text style={styles.text}>Sua senha</Text>
@@ -177,6 +213,22 @@ const styles = StyleSheet.create({
   form: { padding: 24, backgroundColor: "#FFFFFF", borderRadius: 12, width: '100%' },
   header: { fontSize: 24, fontWeight: 'bold', marginBottom: 32, color: '#333' },
   text: { fontSize: 16, fontWeight: 'bold', marginBottom: 4, color: '#555' },
-  input: { width: "100%", borderBottomWidth: 1, borderBottomColor: '#ccc', marginBottom: 32, padding: 8 },
+  input: { width: "100%", borderBottomWidth: 1, borderBottomColor: '#ccc', marginBottom: 32, padding: 8, color: '#000' },
   logo: { width: 100, height: 100, marginBottom: 40, marginTop: 20 },
+  
+  pickerContainer: { 
+    width: "100%", 
+    borderBottomWidth: 1, 
+    borderBottomColor: '#ccc', 
+    marginBottom: 32, 
+    height: 45, 
+    justifyContent: 'center' 
+  },
+  pickerBruto: { 
+    width: "100%", 
+    backgroundColor: 'transparent', 
+    color: '#000',
+    paddingLeft: 8,
+    paddingStart: 8,
+  }
 });

@@ -1,8 +1,9 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import cors from 'cors';
 import path from 'path'; 
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+
 import editarPerfilRoutes from './routes/dadosPerfil'; 
 import authRoutes from './routes/auth';
 import transferenciaRoutes from './routes/transferencia';
@@ -10,25 +11,25 @@ import extratoRoutes from './routes/extrato';
 import emprestimoRoutes from './routes/emprestimo';
 import cassinoRoutes from './routes/cassino';
 import solicitacaoRoutes from './routes/solicitacao';
+import cartaoRoutes from './routes/cartoes'; 
 
 const app = express();
-const prisma = new PrismaClient();
+
+// Centralização do client com coerção de tipo flexível para evitar quebras de cache
+export const prisma = new PrismaClient() as any;
+
 const PORT = 3333;
 
-// Configurações Globais de Middlewares
 app.use(cors());
 app.use(express.json());
 
-// Libera a pasta uploads de forma estática para que o app mobile possa acessar as fotos
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
-// Rastreador de rotas ativo no terminal - Registra a entrada física de qualquer requisição
 app.use((req, res, next) => {
   console.log(`[REQUISIÇÃO GLOBAL] ${req.method} | URL original: ${req.originalUrl}`);
   next();
 });
 
-// Vinculação dos Roteadores Modulares
 app.use('/perfil', editarPerfilRoutes);
 app.use('/auth', authRoutes);
 app.use('/transferencia', transferenciaRoutes);
@@ -36,13 +37,11 @@ app.use('/extrato', extratoRoutes);
 app.use('/emprestimo', emprestimoRoutes);
 app.use('/cassino', cassinoRoutes);
 app.use('/solicitacao', solicitacaoRoutes);
+app.use('/cartoes', cartaoRoutes);
 
-// =======================================================
-// ROTA DE CADASTRO
-// =======================================================
-app.post('/cadastro', async (req, res) => {
+app.post('/cadastro', async (req: Request, res: Response) => {
   try {
-    const { usuario, nome, email, telefone, celular, senha } = req.body;
+    const { usuario, nome, email, telefone, celular, senha, genero } = req.body;
 
     if (!usuario || !nome || !email || !celular || !senha) {
       return res.status(400).json({ erro: 'Todos os campos obrigatórios devem ser preenchidos.' });
@@ -73,11 +72,12 @@ app.post('/cadastro', async (req, res) => {
         senhaUsuario: senhaCriptografada,
         saldo: 100.00, 
         agencia: "0001",
-        conta: numeroConta
+        conta: numeroConta,
+        genero: genero ? String(genero).trim() : "M"
       }
     });
 
-    console.log(`[CADASTRO SUCESSO] ${(novoUsuario as any).nome} registrado. Conta: ${numeroConta}`);
+    console.log(`[CADASTRO SUCESSO] ${(novoUsuario as any).nome} registrado. Conta: ${numeroConta} | Gênero: ${novoUsuario.genero}`);
     return res.status(201).json({ mensagem: 'Usuário cadastrado com sucesso!', id: novoUsuario.id });
 
   } catch (error: any) {
@@ -86,10 +86,7 @@ app.post('/cadastro', async (req, res) => {
   }
 });
 
-// =======================================================
-// ROTA DE LOGIN (CORRIGIDA COM CHECAGEM DE TIPOS)
-// =======================================================
-app.post('/auth/login', async (req, res) => {
+app.post('/auth/login', async (req: Request, res: Response) => {
   try {
     const { email, senha } = req.body;
 
@@ -113,7 +110,6 @@ app.post('/auth/login', async (req, res) => {
       return res.status(401).json({ erro: 'Usuário ou senha incorretos.' });
     }
 
-    // Convertendo o resultado explicitamente para dynamic type para sumir com os erros de compilação
     const usuarioEncontrado = resultadoBusca as any;
 
     const senhaValida = await bcrypt.compare(String(senha), usuarioEncontrado.senhaUsuario);

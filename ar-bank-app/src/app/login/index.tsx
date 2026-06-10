@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { StdButton } from '@/components/StdButton';
 import { Cores } from '../../styles/global';
 
-// Altere o IP abaixo para o IP da sua máquina se for testar em celular físico real
+
 const IP_COMPUTADOR = 'localhost'; 
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 
@@ -28,7 +28,7 @@ export default function LoginForm() {
     }
 
     try {
-      // CORREÇÃO: Adicionado o prefixo '/auth' exigido pelo app.use('/auth', authRoutes) do seu server.ts
+      
       const urlFinal = `${API_URL}/auth/login`;
 
       console.log(`[HTTP] Conectando em: ${urlFinal}`);

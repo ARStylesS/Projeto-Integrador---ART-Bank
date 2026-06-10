@@ -33,6 +33,22 @@ export default function EditarPerfil() {
   const [telefone, setTelefone] = useState('');
   const [celular, setCelular] = useState('');
 
+  // 💡 Função para aplicar máscara de Celular: (XX) XXXXX-XXXX
+  const formatarCelular = (text: string) => {
+    const nums = text.replace(/\D/g, ''); 
+    if (nums.length <= 2) return nums;
+    if (nums.length <= 7) return `(${nums.substring(0, 2)}) ${nums.substring(2)}`;
+    return `(${nums.substring(0, 2)}) ${nums.substring(2, 7)}-${nums.substring(7, 11)}`;
+  };
+
+  // 💡 Função para aplicar máscara de Telefone Fixo: (XX) XXXX-XXXX
+  const formatarTelefoneFixo = (text: string) => {
+    const nums = text.replace(/\D/g, ''); 
+    if (nums.length <= 2) return nums;
+    if (nums.length <= 6) return `(${nums.substring(0, 2)}) ${nums.substring(2)}`;
+    return `(${nums.substring(0, 2)}) ${nums.substring(2, 6)}-${nums.substring(6, 10)}`;
+  };
+
   useEffect(() => {
     async function carregarPerfil() {
       try {
@@ -43,8 +59,9 @@ export default function EditarPerfil() {
           setUsername(dados.usuario || ''); 
           setNome(dados.nome || dados.name || ''); 
           setEmail(dados.email || '');
-          setTelefone(dados.telefone || '');
-          setCelular(dados.celular || ''); 
+          // 💡 Aplica a máscara nos dados puros recebidos da API
+          setTelefone(dados.telefone ? formatarTelefoneFixo(dados.telefone) : '');
+          setCelular(dados.celular ? formatarCelular(dados.celular) : ''); 
         } else {
           const msgErro = dados.erro || 'Erro ao carregar dados.';
           if (Platform.OS === 'web') alert(msgErro);
@@ -69,11 +86,25 @@ export default function EditarPerfil() {
       return;
     }
 
+    // Validação de segurança baseada na quantidade correta de números limpos
+    const celularLimpo = celular ? celular.replace(/\D/g, '') : "";
+    if (celularLimpo.length < 11) {
+      const msgCelular = 'Você deve inserir o DDD seguido do número do celular completo (9 dígitos).';
+      if (Platform.OS === 'web') alert(msgCelular);
+      else Alert.alert('Erro no Celular', msgCelular);
+      return;
+    }
+
+    const telefoneLimpo = telefone ? telefone.replace(/\D/g, '') : "";
+    if (telefoneLimpo && telefoneLimpo.length < 10) {
+      const msgTelefone = 'Você deve inserir o DDD seguido do número fixo completo (8 dígitos).';
+      if (Platform.OS === 'web') alert(msgTelefone);
+      else Alert.alert('Erro no Telefone Fixo', msgTelefone);
+      return;
+    }
+
     setSalvando(true);
     try {
-      const telefoneLimpo = telefone ? telefone.replace(/\D/g, '') : "";
-      const celularLimpo = celular ? celular.replace(/\D/g, '') : "";
-
       console.log(`[HTTP PUT] Transmitindo dados para: ${API_URL}/perfil/${usuarioId}`);
 
       const resposta = await fetch(`${API_URL}/perfil/${usuarioId}`, {
@@ -101,7 +132,7 @@ export default function EditarPerfil() {
       }
 
       if (resposta.ok) {
-        if (Platform.OS === 'web') alert('Perfil atualizado com sucesso!');
+        if (Platform.OS === 'web') alert('Perfil updated com sucesso!');
         else Alert.alert('Sucesso', 'Perfil atualizado com sucesso!');
         
         router.replace({
@@ -173,18 +204,22 @@ export default function EditarPerfil() {
           <TextInput 
             style={styles.input} 
             value={telefone} 
-            onChangeText={setTelefone}
+            // 💡 Atualiza aplicando dinamicamente a máscara de fixo
+            onChangeText={(text) => setTelefone(formatarTelefoneFixo(text))}
             keyboardType="phone-pad"
-            placeholder="(DDD) 4444-4444"
+            maxLength={14} // (XX) XXXX-XXXX
+            placeholder="(11) 4444-4444"
           />
 
           <Text style={styles.label}>Telefone Celular:</Text>
           <TextInput 
             style={styles.input} 
             value={celular} 
-            onChangeText={setCelular}
+            // 💡 Atualiza aplicando dinamicamente a máscara de celular
+            onChangeText={(text) => setCelular(formatarCelular(text))}
             keyboardType="phone-pad"
-            placeholder="(DDD) 99999-9999"
+            maxLength={15} // (XX) XXXXX-XXXX
+            placeholder="(11) 99999-9999"
           />
   
           <StdButton 

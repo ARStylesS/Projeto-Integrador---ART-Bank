@@ -27,8 +27,9 @@ export default function Menu() {
 
   const [visivel, setVisivel] = useState(false);
   const [nomeUsuario, setNomeUsuario] = useState('');
-  const [saudacao, setSaudacao] = useState('Bem-vindo'); // Estado dinâmico puxado do backend
+  const [saudacao, setSaudacao] = useState('Bem-vindo'); 
   const [saldo, setSaldo] = useState('R$ 0,00');
+  const [fotoUrl, setFotoUrl] = useState<string | null>(null); 
 
   useFocusEffect(
     useCallback(() => {
@@ -39,9 +40,8 @@ export default function Menu() {
           if (resposta.ok) {
             setNomeUsuario(dados.usuario || dados.nome || "Usuário");
             setSaldo(`R$ ${Number(dados.saldo).toFixed(2)}`);
-            
-            // Define de forma limpa o valor tratado pelo seu Servidor Node
             setSaudacao(dados.saudacao || 'Bem-vindo');
+            setFotoUrl(dados.fotoUrl || null); 
           }
         } catch (error) {
           console.error("Erro ao sincronizar dados no menu:", error);
@@ -67,8 +67,8 @@ export default function Menu() {
 
   return (
     <View style={styles.container}>
-      {/* Exibe dinamicamente Bem-vindo ou Bem-vinda */}
-      <AppBar title={`${saudacao}, ${nomeUsuario || "Usuário"}!`} usuarioId={usuarioId}/>
+      {/* Passamos o título dinâmico e a foto capturada em lote no fetch único */}
+      <AppBar title={`${saudacao}, ${nomeUsuario || "Usuário"}!`} usuarioId={usuarioId} fotoUrl={fotoUrl}/>
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <TouchableOpacity style={styles.cardSaldo} onPress={() => setVisivel(!visivel)} activeOpacity={0.8}>

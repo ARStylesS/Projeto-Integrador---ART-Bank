@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Constants from 'expo-constants';
 import { View, Text, StyleSheet, Image, TouchableOpacity, Platform } from 'react-native';
-import { useRouter, useSegments, useFocusEffect } from 'expo-router';
+import { useRouter, useSegments, useFocusEffect, usePathname } from 'expo-router';
 import { Cores } from '../styles/global';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? (Platform.OS === 'web' ? 'http://localhost:3333' : 'http://10.0.2.2:3333');
@@ -15,11 +15,11 @@ interface AppBarProps {
 export function AppBar({ title, usuarioId, fotoUrl }: AppBarProps) {
   const router = useRouter();
   const segments = useSegments();
+  const pathname = usePathname(); 
   
-  // Estado local para gerenciar a foto reativa dentro da AppBar
   const [fotoAtual, setFotoAtual] = useState<string | null>(fotoUrl || null);
 
-  // Oculta a foto de perfil e a logo nas telas especificadas
+ 
   const esconderPerfil = 
     segments.includes('dadosPerfil') || 
     segments.includes('editarPerfil') || 
@@ -27,17 +27,18 @@ export function AppBar({ title, usuarioId, fotoUrl }: AppBarProps) {
     segments.includes('extrato') ||
     segments.includes('cassino');
 
-  // Sincroniza a foto local imediatamente se a propriedade pai mudar
+  
+  const estaNoMenu = pathname === '/' || pathname === '/menu' || pathname.includes('menu');
+
+
   useEffect(() => {
-    if (fotoUrl) {
-      setFotoAtual(fotoUrl);
-    }
+    setFotoAtual(fotoUrl || null);
   }, [fotoUrl]);
 
-  // Executa a busca de dados atualizados do perfil sempre que a tela ganha foco
+  
   useFocusEffect(
     useCallback(() => {
-      if (esconderPerfil || !usuarioId) return;
+      if (esconderPerfil || !usuarioId || estaNoMenu) return;
 
       let ativo = true;
 
@@ -60,10 +61,9 @@ export function AppBar({ title, usuarioId, fotoUrl }: AppBarProps) {
       return () => {
         ativo = false;
       };
-    }, [usuarioId, esconderPerfil])
+    }, [usuarioId, esconderPerfil, estaNoMenu])
   );
 
-  // Evita problemas de cache anexando um parâmetro de tempo à URI da imagem
   const obterSourceImagem = () => {
     if (fotoAtual) {
       if (fotoAtual.startsWith('file://') || fotoAtual.startsWith('data:')) {
@@ -78,7 +78,6 @@ export function AppBar({ title, usuarioId, fotoUrl }: AppBarProps) {
     <View style={styles.container}>
       <View style={styles.content}>
         
-        {/* MODIFICAÇÃO AQUI: A logo só aparece se NÃO for para esconder */}
         {!esconderPerfil ? (
           <Image 
             source={require('../../assets/images/logo.png')} 
@@ -86,7 +85,6 @@ export function AppBar({ title, usuarioId, fotoUrl }: AppBarProps) {
             resizeMode="contain" 
           />
         ) : (
-          /* Mantém um espaçador equivalente para o título continuar centralizado */
           <View style={styles.espacadorInvisivelLogo} />
         )}
         
@@ -156,7 +154,6 @@ const styles = StyleSheet.create({
     width: 60,
     height: 50,
   },
-  /* Novo estilo para manter o equilíbrio visual do título centralizado */
   espacadorInvisivelLogo: {
     width: 50,
     height: 50,

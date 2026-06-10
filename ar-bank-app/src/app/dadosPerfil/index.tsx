@@ -9,19 +9,32 @@ import * as ImagePicker from 'expo-image-picker';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? (Platform.OS === 'web' ? 'http://localhost:3333' : 'http://10.0.2.2:3333');
 
-// MODIFICADO: Incluída a propriedade 'tipo' na assinatura do Cartão Virtual
 interface CartaoVirtual {
   id: string;
   numero: string;
   bandeira: string;
-  tipo: 'Débito' | 'Crédito' | 'Múltiplo (C+D)';
+  tipo: 'Débito' | 'Crédito' | 'Débito / Crédito';
 }
+
+const formatarCelular = (text: string) => {
+  const nums = text.replace(/\D/g, ''); 
+  if (nums.length <= 2) return nums;
+  if (nums.length <= 7) return `(${nums.substring(0, 2)}) ${nums.substring(2)}`;
+  return `(${nums.substring(0, 2)}) ${nums.substring(2, 7)}-${nums.substring(7, 11)}`;
+};
+
+const formatarTelefoneFixo = (text: string) => {
+  const nums = text.replace(/\D/g, ''); 
+  if (nums.length <= 2) return nums;
+  if (nums.length <= 6) return `(${nums.substring(0, 2)}) ${nums.substring(2)}`;
+  return `(${nums.substring(0, 2)}) ${nums.substring(2, 6)}-${nums.substring(6, 10)}`;
+};
 
 export default function DadosPerfil() {
   const router = useRouter();
   const params = useLocalSearchParams();
   
-  const obterUsuarioId = (): string => {
+  const usuarioId = useMemo((): string => {
     if (params.id) return String(params.id);
     if (params.usuario) {
       try {
@@ -34,9 +47,7 @@ export default function DadosPerfil() {
       }
     }
     return "1"; 
-  };
-
-  const usuarioId = obterUsuarioId();
+  }, [params.id, params.usuario]);
 
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
@@ -48,9 +59,7 @@ export default function DadosPerfil() {
   const [fotoPerfil, setFotoPerfil] = useState<string | null>(null);
   const [fotoDoBanco, setFotoDoBanco] = useState<string | null>(null);
   const [cartoesVirtuais, setCartoesVirtuais] = useState<CartaoVirtual[]>([]);
-
-  // NOVO ESTADO: Controla o tipo selecionado pelo usuário antes de criar
-  const [tipoCartaoSelecionado, setTipoCartaoSelecionado] = useState<'Débito' | 'Crédito' | 'Múltiplo (C+D)'>('Débito');
+  const [tipoCartaoSelecionado, setTipoCartaoSelecionado] = useState<'Débito' | 'Crédito' | 'Débito / Crédito'>('Débito');
 
   useFocusEffect(
     useCallback(() => {
@@ -62,8 +71,13 @@ export default function DadosPerfil() {
           if (resposta.ok) {
             setNome(dados.nome || "Sem Nome");
             setEmail("Email cadastrado: " + (dados.email || "Sem E-mail"));
-            setTelefone("Telefone-Fixo: " + (dados.telefone || dados.telefoneUsuario || "Sem Telefone"));
-            setCelular("Celular: " + (dados.celular || "Sem Celular"));
+            
+            const telBruto = dados.telefone || dados.telefoneUsuario || "";
+            const celBruto = dados.celular || "";
+
+            setTelefone("Telefone-Fixo: " + (telBruto ? formatarTelefoneFixo(telBruto) : "Sem Telefone"));
+            setCelular("Celular: " + (celBruto ? formatarCelular(celBruto) : "Sem Celular"));
+            
             setSaldo(Number(dados.saldo) || 0);
             setFotoPerfil(dados.fotoUrl || null);
             setFotoDoBanco(dados.fotoUrl || null);
@@ -71,6 +85,20 @@ export default function DadosPerfil() {
             const contaDetectada = dados.conta || dados.numeroConta || dados.contaUsuario || (dados.contaBancaria && dados.contaBancaria.numeroConta) || "--------";
             setAgencia(String(agenciaDetectada));
             setConta(String(contaDetectada));
+
+            if (dados.cartoes && Array.isArray(dados.cartoes)) {
+              setCartoesVirtuais(dados.cartoes);
+            } else {
+              try {
+                const resCartoes = await fetch(`${API_URL}/cartoes/${usuarioId}`);
+                if (resCartoes.ok) {
+                  const listaCartoes = await resCartoes.json();
+                  setCartoesVirtuais(listaCartoes);
+                }
+              } catch (err) {
+                console.log("Rota alternativa de cartões não configurada ou indisponível.");
+              }
+            }
           }
         } catch (error) {
           console.error("[NET ERROR] Falha de rede ao conectar à API:", error);
@@ -90,8 +118,7 @@ export default function DadosPerfil() {
     return require('../../../assets/images/iconProfile.png');
   }, [fotoPerfil]);
 
-  // MODIFICADO: Agora injeta o tipo escolhido na criação do objeto
-  const handleAdicionarCartaoVirtual = () => {
+  const handleAdicionarCartaoVirtual = async () => {
     if (cartoesVirtuais.length >= 3) {
       if (Platform.OS === 'web') alert('Você atingiu o limite máximo de 3 cartões virtuais ativos.');
       else Alert.alert('Limite Atingido', 'Você atingiu o limite máximo de 3 cartões virtuais ativos.');
@@ -99,21 +126,55 @@ export default function DadosPerfil() {
     }
 
     const quatroUltimosDigitos = Math.floor(1000 + Math.random() * 9000).toString();
-    const novoCartao: CartaoVirtual = {
-      id: Math.random().toString(),
-      numero: `•••• •••• •••• ${quatroUltimosDigitos}`,
-      bandeira: Math.random() > 0.5 ? 'Visa' : 'MasterCard',
-      tipo: tipoCartaoSelecionado // Armazena a seleção atual
-    };
+    const numeroGerado = `•••• •••• •••• ${quatroUltimosDigitos}`;
+    const bandeiraGerada = Math.random() > 0.5 ? 'Visa' : 'MasterCard';
 
-    setCartoesVirtuais([...cartoesVirtuais, novoCartao]);
+    try {
+      const resposta = await fetch(`${API_URL}/cartoes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          usuarioId: usuarioId,
+          numero: numeroGerado,
+          bandeira: bandeiraGerada,
+          tipo: tipoCartaoSelecionado,
+        }),
+      });
 
-    if (Platform.OS === 'web') alert(`Cartão Virtual ${novoCartao.bandeira} (${novoCartao.tipo}) criado com sucesso!`);
-    else Alert.alert('Sucesso', `Cartão Virtual ${novoCartao.bandeira} (${novoCartao.tipo}) gerado com sucesso!`);
+      const dadosNovoCartao = await resposta.json();
+
+      if (resposta.ok) {
+        setCartoesVirtuais([...cartoesVirtuais, dadosNovoCartao]);
+        if (Platform.OS === 'web') alert(`Cartão Virtual ${dadosNovoCartao.bandeira} (${dadosNovoCartao.tipo}) criado com sucesso!`);
+        else Alert.alert('Sucesso', `Cartão Virtual ${dadosNovoCartao.bandeira} (${dadosNovoCartao.tipo}) gerado e salvo no banco!`);
+      } else {
+        throw new Error(dadosNovoCartao.erro || 'Falha ao registrar cartão no servidor');
+      }
+    } catch (error) {
+      console.error("[API ERROR] Não foi possível salvar o cartão:", error);
+      if (Platform.OS === 'web') alert('Erro ao salvar o cartão no banco de dados.');
+      else Alert.alert('Erro', 'Não foi possível registrar o cartão no banco.');
+    }
   };
 
-  const handleExcluirCartaoVirtual = (id: string) => {
-    setCartoesVirtuais(cartoesVirtuais.filter(cartao => cartao.id !== id));
+  const handleExcluirCartaoVirtual = async (id: string) => {
+    try {
+      const resposta = await fetch(`${API_URL}/cartoes/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (resposta.ok) {
+        setCartoesVirtuais(cartoesVirtuais.filter(cartao => cartao.id !== id));
+      } else {
+        throw new Error('Não foi possível remover o cartão do servidor.');
+      }
+    } catch (error) {
+      console.error("[API ERROR] Erro ao deletar o cartão:", error);
+      if (Platform.OS === 'web') alert('Erro ao excluir o cartão no servidor.');
+      else Alert.alert('Erro', 'Não foi possível deletar o cartão.');
+    }
   };
 
   const gotoMenu = () => {
@@ -170,7 +231,7 @@ export default function DadosPerfil() {
           uri: Platform.OS === 'android' ? uriSelecionada : uriSelecionada.replace('file://', ''),
           name: 'avatar.jpg',
           type: 'image/jpeg',
-        } as any);
+         } as any);
       }
       const resposta = await fetch(`${API_URL}/perfil/${usuarioId}/foto`, { method: 'POST', body: formData });
       const dados = await resposta.json();
@@ -231,7 +292,6 @@ export default function DadosPerfil() {
 
           <Text style={styles.sectionTitle}>Meus Cartões</Text>
           
-          {/* LISTA DE CARTÕES VIRTUAIS EXIBINDO O TIPO */}
           {cartoesVirtuais.map((cartao) => (
             <View key={cartao.id} style={[styles.cardItem, styles.virtualCardItem]}>
               <View style={{ flexDirection: 'column' }}>
@@ -244,8 +304,10 @@ export default function DadosPerfil() {
                 <Text style={[styles.subtext, { color: '#555', marginLeft: 28, fontSize: 13 }]}>
                   {cartao.numero}
                 </Text>
-                {/* Rótulo dinâmico mostrando o tipo selecionado */}
-                <Text style={[styles.tagTipoCartao, { backgroundColor: cartao.tipo === 'Débito' ? '#e8f5e9' : cartao.tipo === 'Crédito' ? '#fff3e0' : '#f3e5f5', color: cartao.tipo === 'Débito' ? '#2e7d32' : cartao.tipo === 'Crédito' ? '#ef6c00' : '#6a1b9a' }]}>
+                <Text style={[styles.tagTipoCartao, { 
+                  backgroundColor: cartao.tipo === 'Débito' ? '#e8f5e9' : cartao.tipo === 'Crédito' ? '#fff3e0' : '#f3e5f5', 
+                  color: cartao.tipo === 'Débito' ? '#2e7d32' : cartao.tipo === 'Crédito' ? '#ef6c00' : '#6a1b9a' 
+                }]}>
                   {cartao.tipo}
                 </Text>
               </View>
@@ -255,10 +317,9 @@ export default function DadosPerfil() {
             </View>
           ))}
 
-          {/* NOVO: Seletor de Tipo de Função para Novo Cartão Virtual */}
           <Text style={[styles.sectionTitle, { fontSize: 14, marginTop: 20, color: '#666' }]}>Opções para o novo cartão:</Text>
           <View style={styles.seletorTipoContainer}>
-            {(['Débito', 'Crédito', 'Múltiplo (C+D)'] as const).map((tipo) => (
+            {(['Débito', 'Crédito', 'Débito / Crédito'] as const).map((tipo) => (
               <TouchableOpacity
                 key={tipo}
                 style={[styles.opcaoTipoBotao, tipoCartaoSelecionado === tipo && styles.opcaoTipoBotaoAtivo]}
